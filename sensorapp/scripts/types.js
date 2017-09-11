@@ -18,5 +18,6 @@ export type Node = {
 export type NodeInformation = {
   type: string,
   timestamp: string,
+  latency: number,
   coverage: string,
 }

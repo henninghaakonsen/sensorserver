@@ -42,13 +42,34 @@ module.exports = function(app, db) {
   });
 
   app.post(api + '/nodes/:id', (req, res) => {
-    const data = req.body;
+    let data = req.body;
+    let timestamp = new Date(data.timestamp);
+    let currentTime = new Date();
+
+    data.latency = (currentTime.getTime() - timestamp.getTime()) / 1000;
+    //data.latency /= 60;
+    //data.latency = Math.abs(Math.round(diff));
+
     const id = req.params.id;
+    console.log(data)
+
     db.collection(id).insert(data, (err, result) => {
       if (err) {
         res.send({ 'error': 'An error has occurred' });
       } else {
         res.send(result.ops[0]);
+      }
+    });
+  });
+
+  app.post(api + '/nodes/remove/:id', (req, res) => {
+    const id = req.params.id;
+
+    db.collection('nodes').deleteOne({id}, (err, result) => {
+      if (err) {
+        res.send({ 'error': 'An error has occurred' });
+      } else {
+        res.send({ 'sucess': 'id: \'' + id + '\' removed' });
       }
     });
   });

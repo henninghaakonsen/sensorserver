@@ -5,9 +5,7 @@
  */
 
 import type { Navigation } from './navigationReducer'
-import type { Editor } from './editorReducer'
 
 export type AppState = {
   navigation: Navigation,
-  editor: Editor,
 }

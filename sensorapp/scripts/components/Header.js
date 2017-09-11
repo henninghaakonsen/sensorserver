@@ -20,7 +20,7 @@ const Header = () => {
       userSelect: 'none',
       zIndex: 2,
     }}>
-      Health Facility
+      Sensor APP
     </div>
   )
 }

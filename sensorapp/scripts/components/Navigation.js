@@ -32,7 +32,6 @@ class Navigation extends Component {
   }
 
   onClick(node: Node) {
-    console.log("klikk")
     this.props.fetchNode(node)
   }
 
@@ -64,7 +63,6 @@ const NodeList = ({busy, selectedId, onClick, nodes}: {
   selectedId?: string,
   nodes: Node[],
 }) => {
-  console.log(selectedId)
   return (
     <div>
       <h2 style={{fontWeight: 400, fontSize: fonts.large}}/>

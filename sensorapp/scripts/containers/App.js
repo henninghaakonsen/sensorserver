@@ -3,9 +3,7 @@
 import React from 'react'
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 
-import AddButton from '../components/AddButton'
 import Header from '../components/Header'
-import MessagePanel from '../components/MessagePanel'
 import Navigation from '../components/Navigation'
 import NodeInfoComponent from '../components/NodeInformation'
 import Search from '../components/Search'
@@ -22,11 +20,7 @@ const App = () => {
             <Navigation />
           </SideBar>
           <Main>
-            <div style={{ position: "absolute", zIndex: 1, bottom: 20, right: 60}} >
-              <AddButton />
-            </div>
             <NodeInfoComponent />
-            <MessagePanel />
           </Main>
         </Vertical>
       </div>

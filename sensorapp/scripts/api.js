@@ -46,6 +46,7 @@ export function fetchOneNode( node: Node ): Promise<NodeInformation[]> {
     .then(({ information }) => information.map(node => ({
       type: node.type,
       timestamp: node.timestamp,
+      latency: node.latency,
       coverage: node.coverage,
     })));
 }

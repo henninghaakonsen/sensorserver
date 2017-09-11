@@ -15,7 +15,6 @@ const capitalizeFirstLetter = (string: string) => {
 class Search extends Component {
   props: {
     nodes: Node[],
-    selectedNode: (selected: Node) => void,
   }
 
   sourceIndex(query: string, data: any) {
@@ -24,11 +23,8 @@ class Search extends Component {
 
   selectResult(query: string, index: number) {
     let selection = index < 0 ?
-      this.props.headers[this.sourceIndex(query, this.props.headers)] :
-      this.props.headers[index]
-    if (selection) {
-      this.props.selectedUnit(selection)
-    }
+      this.props.nodes[this.sourceIndex(query, this.props.nodes)] :
+      this.props.nodes[index]
   }
 
   render() {
@@ -40,7 +36,7 @@ class Search extends Component {
         zIndex: 2,
       }}>
         <AutoComplete
-          dataSource={this.props.headers}
+          dataSource={this.props.nodes}
           dataSourceConfig={{text: 'displayName', value: 'id'}}
           filter={AutoComplete.caseInsensitiveFilter}
           floatingLabelStyle={{color: colors.accent, fontSize: fonts.medium}}
@@ -58,7 +54,7 @@ class Search extends Component {
 
 const Connected = connectClass(
   (state: AppState) => ({
-    headers: state.navigation.nodes,
+    nodes: state.navigation.nodes,
   }),
   (dispatch: (action: Action) => void) => ({
 

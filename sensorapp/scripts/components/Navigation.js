@@ -92,7 +92,7 @@ const NodeUnit = ({node, onClick, selected}: {
     <div style={{marginTop: 4}}>
       <Button color="#841584"
               onClick={ selected ? doNothing : () => onClick()}
-              text={ node.id + ": " + node.displayName }
+              text={ node.displayName }
               selected={ selected }/>
     </div>
   )

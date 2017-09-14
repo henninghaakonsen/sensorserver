@@ -8,7 +8,6 @@ module.exports = function(app, db) {
     const id = req.params.id;
 
     db.collection(id).find({}).toArray(function (err, information) {
-      console.log({information})
       if (err) {
         res.send({'error':'An error has occurred'});
       } else {
@@ -20,7 +19,6 @@ module.exports = function(app, db) {
 
   app.get(api + '/nodes', (req, res) => {
     db.collection('nodes').find({}).toArray(function (err, nodes) {
-      console.log({nodes})
       if (err) {
         res.send({ 'error': 'An error has occurred' });
       } else {
@@ -47,11 +45,8 @@ module.exports = function(app, db) {
     let currentTime = new Date();
 
     data.latency = (currentTime.getTime() - timestamp.getTime()) / 1000;
-    //data.latency /= 60;
-    //data.latency = Math.abs(Math.round(diff));
 
     const id = req.params.id;
-    console.log(data)
 
     db.collection(id).insert(data, (err, result) => {
       if (err) {

@@ -2,10 +2,9 @@
 
 import React from 'react'
 import { connectClass } from '../connect'
-import AddButton from './AddButton'
 import type { Node, NodeInformation } from '../types'
 
-
+import { colors } from '../styles'
 import {Tabs, Tab} from 'material-ui/Tabs';
 import {
   Table,
@@ -16,11 +15,7 @@ import {
   TableRowColumn,
 } from 'material-ui/Table';
 
-import LineChart from 'react-linechart';
 import {Line} from 'react-chartjs-2';
-
-import IconButton from 'material-ui/IconButton';
-import DeleteIcon from 'material-ui-icons/Delete';
 
 class NodeInfoComponent extends React.Component {
   props: {
@@ -37,10 +32,6 @@ class NodeInfoComponent extends React.Component {
     super(props)
     this.state = {
     }
-  }
-
-  _onRowSelection(key) {
-    this.props.selectedRows.put(key)
   }
 
   render() {
@@ -118,44 +109,39 @@ class NodeInfoComponent extends React.Component {
     };
 
     return (
-      <div>
-      { this.props.selectedNode &&
-      <Tabs style={{height: '100vh', width: '80vw'}}>
-        <Tab label="RAW DATA">
+      this.props.selectedNode &&
+      <Tabs style={{height: '100vh', width: '80vw', overflowY: 'scroll'}}>
+        <Tab label="RAW DATA" style={{height: 50, backgroundColor: colors.accentLight}}>
           <Table
-            onRowSelection={this._onRowSelection}
-            multiSelectable={true}>
+            multiSelectable={true}
+            >
             <TableHeader adjustForCheckbox={true}>
               <TableRow>
-                <TableHeaderColumn>TYPE</TableHeaderColumn>
                 <TableHeaderColumn>TIMESTAMP</TableHeaderColumn>
+                <TableHeaderColumn>TYPE</TableHeaderColumn>
                 <TableHeaderColumn>LATENCY</TableHeaderColumn>
                 <TableHeaderColumn>COVERAGE</TableHeaderColumn>
               </TableRow>
             </TableHeader>
-            <TableBody >
+            <TableBody>
               { this.props.selectedNodeInformation.map((nodeInformation, i) =>
                 <TableRow key={i} value={nodeInformation}>
-                  <TableRowColumn> {nodeInformation.type} </TableRowColumn>
                   <TableRowColumn> {nodeInformation.timestamp} </TableRowColumn>
+                  <TableRowColumn> {nodeInformation.type} </TableRowColumn>
                   <TableRowColumn> {nodeInformation.latency} </TableRowColumn>
                   <TableRowColumn> {nodeInformation.coverage} </TableRowColumn>
                 </TableRow>
               )}
             </TableBody>
           </Table>
-          <div style={{ position: "absolute", zIndex: 1, bottom: -150, right: 60}} >
-            { this.props.selectedNode && <AddButton /> }
-          </div>
         </Tab>
-        <Tab label="GRAPH OVERVIEW">
-          <Line data={latencyData} />
-          <Line data={coverageData} />
+        <Tab label="GRAPH OVERVIEW" style={{height: 50, backgroundColor: colors.accentLight}}>
+          <Line data={latencyData} width={40} height={10}
+                options={{maintainAspectRatio: true}}/>
+          <Line data={coverageData} width={40} height={10}
+                options={{maintainAspectRatio: true}}/>
         </Tab>
       </Tabs>
-      }
-
-      </div>
     )
   }
 }
@@ -165,18 +151,8 @@ const Connected = connectClass(
     nodes: state.navigation.nodes,
     selectedNode: state.navigation.selectedNode,
     selectedNodeInformation: state.navigation.selectedNodeInformation,
-  }),
-  (dispatch: (action: Action) => void) => ({
+  }), (dispatch: (action: Action) => void) => ({
   }), NodeInfoComponent
 )
 
 export default Connected
-
-
-  /*<div style={{position: "absolute", left: 50}}>
-    <LineChart id='latencyChart' height='400' width='600' data={latencyData} xLabel="Timeline" yLabel="Seconds" pointRadius='2'/>
-  </div>
-
-  <div style={{position: "absolute", right: 50}}>
-    <LineChart id='coverageChart' height='400' width='600' data={coverageData} xLabel="Timeline" yLabel="- Db" pointRadius='2' yMin='-120' yMax='0' />
-  </div>*/

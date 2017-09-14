@@ -20,7 +20,7 @@ const App = () => {
             <Navigation />
           </SideBar>
           <Main>
-            <NodeInfoComponent />
+            <NodeInfoComponent/>
           </Main>
         </Vertical>
       </div>

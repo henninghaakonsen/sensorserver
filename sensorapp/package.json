@@ -46,6 +46,7 @@
     "axios": "^0.16.2",
     "babel-polyfill": "^6.26.0",
     "chart.js": "^2.7.0",
+    "flexbox-react": "^4.4.0",
     "google-map-react": "^0.20.1",
     "google-maps-react": "^1.1.0",
     "js-cookie": "^2.1.4",

@@ -7,7 +7,7 @@ const Header = () => {
   return (
     <div style={{
       alignItems: 'center',
-      backgroundColor: colors.dark,
+      backgroundColor: colors.accent,
       color: 'white',
       display: 'flex',
       flexDirection: 'column',

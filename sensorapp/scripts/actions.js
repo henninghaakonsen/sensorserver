@@ -6,14 +6,15 @@
  * @flow
  */
 
-import type { Node } from './types'
+import type { Node, NodeInformation } from './types'
 
 export type Action =
-
     // Navigation actions
     { type: 'NODES_FETCH_REQUESTED' }
     | { type: 'NODES_FETCH_SUCCEEDED', nodes: Node[] }
     | { type: 'NODES_FETCH_FAILED', message: string }
     | { type: 'NODE_FETCH_REQUESTED', node: Node }
     | { type: 'NODE_FETCH_SUCCEEDED', nodeInformation: NodeInformation[] }
-    | { type: 'NODE_FETCH_FAILED', message: string};
+    | { type: 'NODE_FETCH_FAILED', message: string}
+    | { type: 'NODE_QUERY_CLICKED', node: Node}
+    | { type: 'NODE_SELECTED', node: Node};

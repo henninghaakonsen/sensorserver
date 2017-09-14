@@ -32,6 +32,9 @@ export default function navigationReducer(state: Navigation = initialState, acti
     case 'NODES_FETCH_FAILED':
       return {...state, nodes: [], fetchingNodes: false}
 
+    case 'NODE_SELECTED':
+      return {...state, selectedNode: action.node}
+
     case 'NODE_FETCH_REQUESTED':
       return {...state, selectedNode: action.node}
 

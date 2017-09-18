@@ -45,6 +45,7 @@ module.exports = function(app, db) {
     let currentTime = new Date();
 
     data.latency = (currentTime.getTime() - timestamp.getTime()) / 1000;
+    data.coverage = data.type == "coverage" ? data.coverage * 1.0 : 0
 
     const id = req.params.id;
 

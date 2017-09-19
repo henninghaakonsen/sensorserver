@@ -5,7 +5,7 @@ const db             = require('../config/db');
 const app            = express();
 var path = require('path');
 var public = __dirname + "/app/public/";
-const port = 8020;
+const port = process.env.PORT || 8020;
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.get('/', function(req, res) {

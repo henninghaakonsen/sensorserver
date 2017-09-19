@@ -4,7 +4,7 @@
   "description": "Server hosting sensordata",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon src/server.js"
+    "start": "node src/server.js"
   },
   "repository": {
     "type": "git",

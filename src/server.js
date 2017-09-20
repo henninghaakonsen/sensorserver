@@ -7,8 +7,7 @@ var path = require('path');
 var public = __dirname + "/app/public/";
 const port = process.env.PORT || 8020;
 
-console.log(process.env.PORT)
-console.log(port)
+app.use(express.static(path.join(__dirname, 'app/public')))
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.get('/', function(req, res) {

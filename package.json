@@ -4,7 +4,7 @@
   "description": "Server hosting sensordata",
   "main": "index.js",
   "scripts": {
-    "start": "node src/server.js"
+    "start": "nodemon src/server.js"
   },
   "repository": {
     "type": "git",
@@ -24,7 +24,8 @@
     "material-ui": "^0.19.1",
     "mongodb": "^2.2.31",
     "react": "^15.6.1",
-    "react-dom": "^15.6.1"
+    "react-dom": "^15.6.1",
+    "nodemon": "^1.11.0"
   },
   "devDependencies": {
     "nodemon": "^1.11.0"

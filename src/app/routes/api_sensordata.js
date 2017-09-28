@@ -14,7 +14,7 @@ module.exports = function(app, db) {
 
     db.collection(id).find({"timestamp": {
       $gte: fromDate,
-      $lt: toDate, }}).sort({timestamp: 1}).limit(limit).toArray(function (err, information) {
+      $lt: toDate, }}).sort({timestamp: -1}).limit(limit).toArray(function (err, information) {
       if (err) {
         res.send({'error': 'An error has occurred, ' + err});
       } else {

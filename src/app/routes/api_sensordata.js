@@ -6,10 +6,17 @@ let api = '/api';
 module.exports = function(app, db) {
   app.get(api + '/nodes/:id', (req, res) => {
     const id = req.params.id;
+    const limit = Number(req.query.limit);
+    const fromDate = req.query.fromDate;
+    const toDate = req.query.toDate;
 
-    db.collection(id).find({}).toArray(function (err, information) {
+    if(limit == undefined) limit = -1
+
+    db.collection(id).find({"timestamp": {
+      $gte: fromDate,
+      $lt: toDate, }}).sort({timestamp: 1}).limit(limit).toArray(function (err, information) {
       if (err) {
-        res.send({'error':'An error has occurred'});
+        res.send({'error': 'An error has occurred, ' + err});
       } else {
         res.header('Access-Control-Allow-Origin', '*');
         res.send({information});
@@ -48,6 +55,22 @@ module.exports = function(app, db) {
     data.coverage = data.type == "coverage" ? data.coverage * 1.0 : 0
 
     const id = req.params.id;
+    const displayName = data.displayName;
+    
+    //find if the node id exists
+    db.collection('nodes').find({id: id}).toArray(function(err, doc) 
+    {
+      // It does not exist, so add it to the db
+      if(doc.length == 0) 
+      {
+        let data = {'id': id, 'displayName': displayName}
+        db.collection('nodes').insert(data, (err, result) => {
+          if (err) {
+            res.send({ 'error': 'An error has occurred' });
+          } 
+        });
+      }
+    });
 
     db.collection(id).insert(data, (err, result) => {
       if (err) {

@@ -96,12 +96,15 @@ module.exports = function (app, db) {
     // Drop the old collection and generate new data
     let id_interval = id + "_" + interval
 
-    db.collection(id_interval).find({ id: id }).toArray(function (err, doc) {
-      // It does exist, so remove it from the db
-      if (doc.length != 0) {
+    db.collection(id_interval).find({}).limit(1).toArray(function (err, information) {
+      if (err) {
+        console.log(err)
+      }
+
+      if(information.length > 0) {
         db.collection(id_interval).drop();
       }
-    });
+    })
 
     db.collection(id).find({}).sort({ timestamp: 1 }).toArray(function (err, nodeInfo) {
       if (err) {
@@ -137,10 +140,14 @@ module.exports = function (app, db) {
             if (elem == undefined) {
               elem = []
               elem[0] = nodeInfo[i].latency
-              elem[1] = nodeInfo[i].coverage
+              elem[1] = nodeInfo[i].type == "coverage" ? nodeInfo[i].coverage : -120
             } else {
               elem[0] = (nodeInfo[i].latency + elem[0]) / 2
-              elem[1] = nodeInfo[i].coverage != 0 ? (nodeInfo[i].coverage + elem[1]) / 2 : elem[1]
+
+              if(nodeInfo[i].type == "coverage") {
+                if(elem[1] == -120) elem[1] = nodeInfo[i].coverage
+                else (nodeInfo[i].coverage + elem[1]) / 2
+              }
             }
 
             newDict[dateIndexFrom.toISOString()] = elem
@@ -152,6 +159,8 @@ module.exports = function (app, db) {
               dateIndexTo = new Date(dateIndexFrom.getTime() + coeff)
             }
           } else {
+            if (i == nodeInfoLength) break
+            
             newDict[dateIndexFrom.toISOString()] = [0, -120]
 
             dateIndexFrom = new Date(dateIndexFrom.getTime() + coeff)
@@ -228,6 +237,7 @@ module.exports = function (app, db) {
   setInterval(avg60Creation, 1000 * 60 * 60);
 
   app.post(api + '/generateAverage', (req, res) => {
+    console.log("generateAverages")
     res.header('Access-Control-Allow-Origin', '*');
     res.send("OK");
 
@@ -249,6 +259,5 @@ module.exports = function (app, db) {
     res.send("OK");
 
     createAvgCollection(id, interval)
-
   });
 }

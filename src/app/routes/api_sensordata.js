@@ -5,7 +5,8 @@ module.exports = function (app, db) {
   app.get(api + '/nodes/:id', (req, res) => {
     const id = req.params.id;
     const interval = req.query.interval;
-    const fromDate = req.query.fromDate;
+    let coeff = 1000 * 60 * interval
+    const fromDate = new Date((Math.round(new Date(req.query.fromDate).getTime() / coeff) * coeff) - coeff).toISOString()
     const toDate = req.query.toDate;
 
     let id_interval = id + "_" + interval
@@ -131,11 +132,12 @@ module.exports = function (app, db) {
         let setDateIndex = true
 
         let currentDate = new Date(nodeInfo[0].timestamp)
-        let i = 1
+        let i = 0
 
         while (currentDate.getTime() < toDate.getTime()) {
+          const key = dateIndexFrom.toISOString()
           if ((currentDate.getTime() >= dateIndexFrom.getTime() && currentDate.getTime() <= dateIndexTo.getTime()) && i < nodeInfoLength) {
-            let elem = newDict[dateIndexFrom.toISOString()]
+            let elem = newDict[key]
 
             if (elem == undefined) {
               elem = []
@@ -150,9 +152,9 @@ module.exports = function (app, db) {
               }
             }
 
-            newDict[dateIndexFrom.toISOString()] = elem
-            currentDate = new Date(nodeInfo[i].timestamp)
+            newDict[key] = elem
             i++
+            if( i < nodeInfoLength ) currentDate = new Date(nodeInfo[i].timestamp)
 
             if (currentDate.getTime() >= dateIndexTo.getTime()) {
               dateIndexFrom = new Date(dateIndexFrom.getTime() + coeff)
@@ -161,7 +163,7 @@ module.exports = function (app, db) {
           } else {
             if (i == nodeInfoLength) break
             
-            newDict[dateIndexFrom.toISOString()] = [0, -120]
+            newDict[key] = [0, -120]
 
             dateIndexFrom = new Date(dateIndexFrom.getTime() + coeff)
             dateIndexTo = new Date(dateIndexTo.getTime() + coeff)
@@ -172,7 +174,9 @@ module.exports = function (app, db) {
 
         let count = 0
         for (var key in newDict) {
-          let data = { timestamp: key, latency: newDict[key][0], coverage: newDict[key][1] }
+          let timeKey = new Date(key).getTime()
+          timeKey = new Date(timeKey - (dateIndexFrom.getTimezoneOffset() * 1000 * 60)).toISOString()
+          let data = { timestamp: timeKey, latency: newDict[key][0], coverage: newDict[key][1] }
           db.collection(id_interval).insert(data, (err, result) => {
             if (err) {
               console.log("Error", err)

@@ -5,11 +5,18 @@ module.exports = function (app, db) {
   app.get(api + '/nodes/:id', (req, res) => {
     const id = req.params.id;
     const interval = req.query.interval;
-    let coeff = 1000 * 60 * interval
-    const fromDate = new Date((Math.round(new Date(req.query.fromDate).getTime() / coeff) * coeff) - coeff).toISOString()
-    const toDate = req.query.toDate;
 
-    let id_interval = id + "_" + interval
+    let coeff = 1000 * 60 * interval    
+    let fromDate = req.query.fromDate;
+    let toDate = req.query.toDate;
+
+    let id_interval = null
+    if(interval != 0) {
+      id_interval = id + "_" + interval
+      fromDate = new Date((Math.round(new Date(req.query.fromDate).getTime() / coeff) * coeff) - coeff).toISOString()
+    } else {
+      id_interval = id
+    }
 
     db.collection(id_interval).find({
       "timestamp": {
@@ -93,7 +100,7 @@ module.exports = function (app, db) {
     });
   });
 
-  var createAvgCollection = function(id, interval) {
+  var createAvgCollection = function (id, interval) {
     // Drop the old collection and generate new data
     let id_interval = id + "_" + interval
 
@@ -102,7 +109,7 @@ module.exports = function (app, db) {
         console.log(err)
       }
 
-      if(information.length > 0) {
+      if (information.length > 0) {
         db.collection(id_interval).drop();
       }
     })
@@ -146,15 +153,15 @@ module.exports = function (app, db) {
             } else {
               elem[0] = (nodeInfo[i].latency + elem[0]) / 2
 
-              if(nodeInfo[i].type == "coverage") {
-                if(elem[1] == -120) elem[1] = nodeInfo[i].coverage
+              if (nodeInfo[i].type == "coverage") {
+                if (elem[1] == -120) elem[1]  = nodeInfo[i].coverage
                 else (nodeInfo[i].coverage + elem[1]) / 2
               }
             }
 
             newDict[key] = elem
             i++
-            if( i < nodeInfoLength ) currentDate = new Date(nodeInfo[i].timestamp)
+            if (i < nodeInfoLength) currentDate = new Date(nodeInfo[i].timestamp)
 
             if (currentDate.getTime() >= dateIndexTo.getTime()) {
               dateIndexFrom = new Date(dateIndexFrom.getTime() + coeff)
@@ -162,7 +169,7 @@ module.exports = function (app, db) {
             }
           } else {
             if (i == nodeInfoLength) break
-            
+
             newDict[key] = [0, -120]
 
             dateIndexFrom = new Date(dateIndexFrom.getTime() + coeff)
@@ -184,64 +191,64 @@ module.exports = function (app, db) {
           });
         }
       }
-    })};
+    })
+  };
 
-  
-  var avg5Creation = function() {
+
+  var avg5Creation = function () {
     db.collection('nodes').find({}).toArray(function (err, nodes) {
       if (err) {
         console.log("Error", err)
       } else {
-        for(let i = 0; i<nodes.length; i++) {
+        for (let i = 0; i < nodes.length; i++) {
           createAvgCollection(nodes[i].id, 5)
         }
       }
     });
   }
 
-  var avg10Creation = function() {
+  var avg10Creation = function () {
     db.collection('nodes').find({}).toArray(function (err, nodes) {
       if (err) {
         console.log("Error", err)
       } else {
-        for(let i = 0; i<nodes.length; i++) {
+        for (let i = 0; i < nodes.length; i++) {
           createAvgCollection(nodes[i].id, 10)
         }
       }
     });
   }
 
-  var avg30Creation = function() {
+  var avg30Creation = function () {
     db.collection('nodes').find({}).toArray(function (err, nodes) {
       if (err) {
         console.log("Error", err)
       } else {
-        for(let i = 0; i<nodes.length; i++) {
+        for (let i = 0; i < nodes.length; i++) {
           createAvgCollection(nodes[i].id, 30)
         }
       }
     });
   }
 
-  var avg60Creation = function() {
+  var avg60Creation = function () {
     db.collection('nodes').find({}).toArray(function (err, nodes) {
       if (err) {
         console.log("Error", err)
       } else {
-        for(let i = 0; i<nodes.length; i++) {
+        for (let i = 0; i < nodes.length; i++) {
           createAvgCollection(nodes[i].id, 60)
         }
       }
     });
   }
-  
+
   setInterval(avg5Creation, 1000 * 60 * 5);
   setInterval(avg10Creation, 1000 * 60 * 10);
   setInterval(avg30Creation, 1000 * 60 * 30);
   setInterval(avg60Creation, 1000 * 60 * 60);
 
   app.post(api + '/generateAverage', (req, res) => {
-    console.log("generateAverages")
     res.header('Access-Control-Allow-Origin', '*');
     res.send("OK");
 
@@ -255,8 +262,6 @@ module.exports = function (app, db) {
     const id = req.params.id;
     let interval = req.query.interval;
 
-    console.log(req.query)
-    console.log(interval)
     if (interval == undefined) interval = 5
 
     res.header('Access-Control-Allow-Origin', '*');

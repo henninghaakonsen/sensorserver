@@ -182,8 +182,8 @@ module.exports = function (app, db) {
         let count = 0
         for (var key in newDict) {
           let timeKey = new Date(key).getTime()
-          timeKey = new Date(timeKey - (dateIndexFrom.getTimezoneOffset() * 1000 * 60)).toISOString()
-          let data = { timestamp: timeKey, latency: newDict[key][0], coverage: newDict[key][1] }
+          timeKey = new Date(key).toISOString()
+          let data = { timestamp: key, latency: newDict[key][0], coverage: newDict[key][1] }
           db.collection(id_interval).insert(data, (err, result) => {
             if (err) {
               console.log("Error", err)

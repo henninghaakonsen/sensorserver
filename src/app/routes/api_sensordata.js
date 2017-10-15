@@ -6,12 +6,12 @@ module.exports = function (app, db) {
     const id = req.params.id;
     const interval = req.query.interval;
 
-    let coeff = 1000 * 60 * interval    
+    let coeff = 1000 * 60 * interval
     let fromDate = req.query.fromDate;
     let toDate = req.query.toDate;
 
     let id_interval = null
-    if(interval != 0) {
+    if (interval != 0) {
       id_interval = id + "_" + interval
       fromDate = new Date((Math.round(new Date(req.query.fromDate).getTime() / coeff) * coeff) - coeff).toISOString()
     } else {
@@ -104,15 +104,18 @@ module.exports = function (app, db) {
     // Drop the old collection and generate new data
     let id_interval = id + "_" + interval
 
-    db.collection(id_interval).find({}).limit(1).toArray(function (err, information) {
+    let exists = false
+    db.collection(id_interval).find({}).limit(2).toArray(function (err, information) {
       if (err) {
         console.log(err)
+        return null
+      } else {
+        if (information.length > 0) {
+          console.log("length: ", information.length)
+          exists = true
+        }
       }
-
-      if (information.length > 0) {
-        db.collection(id_interval).drop();
-      }
-    })
+    });
 
     db.collection(id).find({}).sort({ timestamp: 1 }).toArray(function (err, nodeInfo) {
       if (err) {
@@ -140,7 +143,6 @@ module.exports = function (app, db) {
 
         let currentDate = new Date(nodeInfo[0].timestamp)
         let i = 0
-
         while (currentDate.getTime() < toDate.getTime()) {
           const key = dateIndexFrom.toISOString()
           if ((currentDate.getTime() >= dateIndexFrom.getTime() && currentDate.getTime() <= dateIndexTo.getTime()) && i < nodeInfoLength) {
@@ -150,12 +152,16 @@ module.exports = function (app, db) {
               elem = []
               elem[0] = nodeInfo[i].latency
               elem[1] = nodeInfo[i].type == "coverage" ? nodeInfo[i].coverage : -120
+              elem[2] = 1
+              elem[3] = nodeInfo[i].type == "coverage" ? 1 : 0
             } else {
               elem[0] = (nodeInfo[i].latency + elem[0]) / 2
+              elem[2] += 1
 
               if (nodeInfo[i].type == "coverage") {
-                if (elem[1] == -120) elem[1]  = nodeInfo[i].coverage
+                if (elem[1] == -120) elem[1] = nodeInfo[i].coverage
                 else (nodeInfo[i].coverage + elem[1]) / 2
+                elem[3] += 1
               }
             }
 
@@ -170,7 +176,7 @@ module.exports = function (app, db) {
           } else {
             if (i == nodeInfoLength) break
 
-            newDict[key] = [0, -120]
+            newDict[key] = [0, -120, 0, 0]
 
             dateIndexFrom = new Date(dateIndexFrom.getTime() + coeff)
             dateIndexTo = new Date(dateIndexTo.getTime() + coeff)
@@ -179,19 +185,45 @@ module.exports = function (app, db) {
           }
         }
 
+        const id = id_interval
+        if (exists) {
+          id_interval = id_interval + "_temp"
+        }
+
         let count = 0
         for (var key in newDict) {
           let timeKey = new Date(key).getTime()
           timeKey = new Date(key).toISOString()
-          let data = { timestamp: key, latency: newDict[key][0], coverage: newDict[key][1] }
+          let data = { timestamp: key, latency: newDict[key][0], coverage: newDict[key][1], latencyDataPoints: newDict[key][2], coverageDataPoints: newDict[key][3] }
           db.collection(id_interval).insert(data, (err, result) => {
             if (err) {
               console.log("Error", err)
             }
           });
         }
+
+        if (exists) {
+          db.collection(id).drop(function (err) {
+            if (err) {
+              console.log("Error drop: ", err)
+            }
+
+            db.collection(id_interval).rename(id, function (err, newColl) {
+              if (err) {
+                console.log("Error rename: ", err)
+              }
+
+              /*db.collection(id_interval).drop(function (err) {
+                if (err) {
+                  console.log("Error drop temp collection: ", err)
+                }
+              });*/
+            });
+          });
+        }
       }
     })
+    console.log("Finished")
   };
 
 
@@ -243,12 +275,13 @@ module.exports = function (app, db) {
     });
   }
 
-  setInterval(avg5Creation, 1000 * 60 * 5);
-  setInterval(avg10Creation, 1000 * 60 * 10);
-  setInterval(avg30Creation, 1000 * 60 * 30);
-  setInterval(avg60Creation, 1000 * 60 * 60);
+  //setInterval(avg5Creation, 1000 * 60 * 5);
+  //setInterval(avg10Creation, 1000 * 60 * 10);
+  //setInterval(avg30Creation, 1000 * 60 * 30);
+  //setInterval(avg60Creation, 1000 * 60 * 60);
 
   app.post(api + '/generateAverage', (req, res) => {
+    console.log("generate average")
     res.header('Access-Control-Allow-Origin', '*');
     res.send("OK");
 
@@ -260,13 +293,17 @@ module.exports = function (app, db) {
 
   app.post(api + '/nodes/generateAverage/:id', (req, res) => {
     const id = req.params.id;
-    let interval = req.query.interval;
 
-    if (interval == undefined) interval = 5
+    console.log("generate average on id", id)
 
     res.header('Access-Control-Allow-Origin', '*');
-    res.send("OK");
 
-    createAvgCollection(id, interval)
+    if (id != undefined) {
+      res.send("OK")
+      createAvgCollection(id, 5)
+      createAvgCollection(id, 10)
+      createAvgCollection(id, 30)
+      createAvgCollection(id, 60)
+    } else res.send("ERROR, undefined id")
   });
 }

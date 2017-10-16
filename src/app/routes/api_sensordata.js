@@ -13,7 +13,6 @@ module.exports = function (app, db) {
     let id_interval = null
     if (interval != 0) {
       id_interval = id + "_" + interval
-      fromDate = new Date((Math.round(new Date(req.query.fromDate).getTime() / coeff) * coeff) - coeff).toISOString()
     } else {
       id_interval = id
     }
@@ -100,26 +99,11 @@ module.exports = function (app, db) {
     });
   });
 
-  var createAvgCollection = function (id, interval) {
-    // Drop the old collection and generate new data
-    let id_interval = id + "_" + interval
-
-    let exists = false
-    db.collection(id_interval).find({}).limit(2).toArray(function (err, information) {
-      if (err) {
-        console.log(err)
-        return null
-      } else {
-        if (information.length > 0) {
-          console.log("length: ", information.length)
-          exists = true
-        }
-      }
-    });
-
+  var calculateAndInsertAverages = function (id, interval, id_interval) {
     db.collection(id).find({}).sort({ timestamp: 1 }).toArray(function (err, nodeInfo) {
+      console.log(nodeInfo.length)
       if (err) {
-        console.log("Error", err)
+        console.log("Error when collecting information about node id '" + id + "' - ", err)
       } else {
         let newDict = {}
 
@@ -185,11 +169,6 @@ module.exports = function (app, db) {
           }
         }
 
-        const id = id_interval
-        if (exists) {
-          id_interval = id_interval + "_temp"
-        }
-
         let count = 0
         for (var key in newDict) {
           let timeKey = new Date(key).getTime()
@@ -201,29 +180,31 @@ module.exports = function (app, db) {
             }
           });
         }
+      }
+    });
+  }
 
-        if (exists) {
-          db.collection(id).drop(function (err) {
+  var createAvgCollection = function (id, interval) {
+    // Drop the old collection and generate new data
+    let id_interval = id + "_" + interval
+
+    db.collection(id_interval).find({}).limit(2).toArray(function (err, information) {
+      if (err) {
+        console.log("Error when searching for id_interval collection - ", err)
+        return null
+      } else {
+        if (information.length > 0) {
+          console.log("It already exists - delete it")
+          db.collection(id_interval).drop(function (err) {
             if (err) {
               console.log("Error drop: ", err)
             }
-
-            db.collection(id_interval).rename(id, function (err, newColl) {
-              if (err) {
-                console.log("Error rename: ", err)
-              }
-
-              /*db.collection(id_interval).drop(function (err) {
-                if (err) {
-                  console.log("Error drop temp collection: ", err)
-                }
-              });*/
-            });
           });
         }
       }
-    })
-    console.log("Finished")
+
+      calculateAndInsertAverages(id, interval, id_interval);
+    });
   };
 
 
@@ -275,10 +256,10 @@ module.exports = function (app, db) {
     });
   }
 
-  //setInterval(avg5Creation, 1000 * 60 * 5);
-  //setInterval(avg10Creation, 1000 * 60 * 10);
-  //setInterval(avg30Creation, 1000 * 60 * 30);
-  //setInterval(avg60Creation, 1000 * 60 * 60);
+  setInterval(avg5Creation, 1000 * 60 * 5);
+  setInterval(avg10Creation, 1000 * 60 * 10);
+  setInterval(avg30Creation, 1000 * 60 * 30);
+  setInterval(avg60Creation, 1000 * 60 * 60);
 
   app.post(api + '/generateAverage', (req, res) => {
     console.log("generate average")

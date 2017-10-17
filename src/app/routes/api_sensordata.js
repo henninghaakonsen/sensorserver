@@ -59,6 +59,7 @@ module.exports = function (app, db) {
     let timestamp = new Date(data.timestamp);
     let currentTime = new Date();
 
+    console.log("timestamp: ", timestamp,", currentTime: ", currentTime)
     data.latency = (currentTime.getTime() - timestamp.getTime()) / 1000;
     data.coverage = data.type == "coverage" ? data.coverage * 1.0 : 0
 

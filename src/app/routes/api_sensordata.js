@@ -161,8 +161,6 @@ module.exports = function (app, db) {
           } else {
             if (i == nodeInfoLength) break
 
-            //newDict[key] = [0, -120, 0, 0]
-
             dateIndexFrom = moment.utc(dateIndexFrom.valueOf() + coeff)
             dateIndexTo = moment.utc(dateIndexTo.valueOf() + coeff)
 
@@ -195,7 +193,6 @@ module.exports = function (app, db) {
         return null
       } else {
         if (information.length > 0) {
-          console.log("It already exists - delete it")
           db.collection(id_interval).drop(function (err) {
             if (err) {
               console.log("Error drop: ", err)
@@ -263,7 +260,6 @@ module.exports = function (app, db) {
   setInterval(avg60Creation, 1000 * 60 * 60);
 
   app.post(api + '/generateAverage', (req, res) => {
-    console.log("generate average")
     res.header('Access-Control-Allow-Origin', '*');
     res.send("OK");
 
@@ -275,8 +271,6 @@ module.exports = function (app, db) {
 
   app.post(api + '/nodes/generateAverage/:id', (req, res) => {
     const id = req.params.id;
-
-    console.log("generate average on id", id)
 
     res.header('Access-Control-Allow-Origin', '*');
 

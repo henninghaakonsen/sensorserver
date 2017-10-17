@@ -1,4 +1,5 @@
 var ObjectID = require('mongodb').ObjectID;
+var moment = require('moment')
 let api = '/api';
 
 module.exports = function (app, db) {
@@ -56,11 +57,11 @@ module.exports = function (app, db) {
 
   app.post(api + '/nodes/:id', (req, res) => {
     let data = req.body;
-    let timestamp = new Date(data.timestamp);
-    let currentTime = new Date();
+    let timestamp = moment.utc(data.timestamp);
+    data.timestamp = timestamp.format()
+    var currentTime = moment.utc();
 
-    console.log("timestamp: ", timestamp,", currentTime: ", currentTime)
-    data.latency = (currentTime.getTime() - timestamp.getTime()) / 1000;
+    data.latency = (currentTime.valueOf() - timestamp.valueOf()) / 1000;
     data.coverage = data.type == "coverage" ? data.coverage * 1.0 : 0
 
     const id = req.params.id;
@@ -110,10 +111,12 @@ module.exports = function (app, db) {
 
         var coeff = 1000 * 60 * interval
 
-        let toDate = new Date()
+        let toDate = moment.utc()
 
-        let dateIndexFrom = new Date((Math.round(new Date(nodeInfo[0].timestamp).getTime() / coeff) * coeff) - coeff)
-        let dateIndexTo = new Date(dateIndexFrom.getTime() + coeff)
+        let dateIndexFrom = moment.utc((Math.round(moment.utc(nodeInfo[0].timestamp).valueOf() / coeff) * coeff) - coeff)
+        let dateIndexTo = moment.utc(dateIndexFrom.valueOf() + coeff)
+
+        console.log(dateIndexFrom, nodeInfo[0].timestamp)
 
         let latencyIndex = 0
         let coverageIndex = 0
@@ -126,11 +129,11 @@ module.exports = function (app, db) {
         let nodeInfoLength = nodeInfo.length;
         let setDateIndex = true
 
-        let currentDate = new Date(nodeInfo[0].timestamp)
+        let currentDate = moment(nodeInfo[0].timestamp)
         let i = 0
-        while (currentDate.getTime() < toDate.getTime()) {
-          const key = dateIndexFrom.toISOString()
-          if ((currentDate.getTime() >= dateIndexFrom.getTime() && currentDate.getTime() <= dateIndexTo.getTime()) && i < nodeInfoLength) {
+        while (currentDate.valueOf() < toDate.valueOf()) {
+          const key = dateIndexFrom.format()
+          if ((currentDate.valueOf() >= dateIndexFrom.valueOf() && currentDate.valueOf() <= dateIndexTo.valueOf()) && i < nodeInfoLength) {
             let elem = newDict[key]
 
             if (elem == undefined) {
@@ -152,19 +155,19 @@ module.exports = function (app, db) {
 
             newDict[key] = elem
             i++
-            if (i < nodeInfoLength) currentDate = new Date(nodeInfo[i].timestamp)
+            if (i < nodeInfoLength) currentDate = moment.utc(nodeInfo[i].timestamp)
 
-            if (currentDate.getTime() >= dateIndexTo.getTime()) {
-              dateIndexFrom = new Date(dateIndexFrom.getTime() + coeff)
-              dateIndexTo = new Date(dateIndexFrom.getTime() + coeff)
+            if (currentDate.valueOf() >= dateIndexTo.valueOf()) {
+              dateIndexFrom = moment.utc(dateIndexFrom.valueOf() + coeff)
+              dateIndexTo = moment.utc(dateIndexFrom.valueOf() + coeff)
             }
           } else {
             if (i == nodeInfoLength) break
 
-            newDict[key] = [0, -120, 0, 0]
+            //newDict[key] = [0, -120, 0, 0]
 
-            dateIndexFrom = new Date(dateIndexFrom.getTime() + coeff)
-            dateIndexTo = new Date(dateIndexTo.getTime() + coeff)
+            dateIndexFrom = moment.utc(dateIndexFrom.valueOf() + coeff)
+            dateIndexTo = moment.utc(dateIndexTo.valueOf() + coeff)
 
             if (i == nodeInfoLength) currentDate = dateIndexTo
           }
@@ -172,8 +175,8 @@ module.exports = function (app, db) {
 
         let count = 0
         for (var key in newDict) {
-          let timeKey = new Date(key).getTime()
-          timeKey = new Date(key).toISOString()
+          let timeKey = moment.utc(key).valueOf()
+          timeKey = moment.utc(key).toISOString()
           let data = { timestamp: key, latency: newDict[key][0], coverage: newDict[key][1], latencyDataPoints: newDict[key][2], coverageDataPoints: newDict[key][3] }
           db.collection(id_interval).insert(data, (err, result) => {
             if (err) {

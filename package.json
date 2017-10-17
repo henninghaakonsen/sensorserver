@@ -23,10 +23,12 @@
     "express": "^4.15.4",
     "lime-coap": "^0.2.13",
     "material-ui": "^0.19.1",
+    "moment": "^2.19.1",
     "mongodb": "^2.2.31",
     "nodemon": "^1.11.0",
     "react": "^15.6.1",
-    "react-dom": "^15.6.1"
+    "react-dom": "^15.6.1",
+    "react-moment": "^0.6.5"
   },
   "devDependencies": {
     "nodemon": "^1.11.0"

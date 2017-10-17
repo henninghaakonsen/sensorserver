@@ -103,7 +103,6 @@ module.exports = function (app, db) {
 
   var calculateAndInsertAverages = function (id, interval, id_interval) {
     db.collection(id).find({}).sort({ timestamp: 1 }).toArray(function (err, nodeInfo) {
-      console.log(nodeInfo.length)
       if (err) {
         console.log("Error when collecting information about node id '" + id + "' - ", err)
       } else {
@@ -115,8 +114,6 @@ module.exports = function (app, db) {
 
         let dateIndexFrom = moment.utc((Math.round(moment.utc(nodeInfo[0].timestamp).valueOf() / coeff) * coeff) - coeff)
         let dateIndexTo = moment.utc(dateIndexFrom.valueOf() + coeff)
-
-        console.log(dateIndexFrom, nodeInfo[0].timestamp)
 
         let latencyIndex = 0
         let coverageIndex = 0

@@ -21,7 +21,7 @@ module.exports = function (app, db) {
     db.collection(id_interval).find({
       "timestamp": {
         $gte: fromDate,
-        $lt: toDate,
+        $lte: toDate,
       }
     }).sort({ timestamp: 1 }).toArray(function (err, information) {
       if (err) {

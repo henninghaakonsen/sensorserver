@@ -18,19 +18,30 @@ module.exports = function (app, db) {
       id_interval = id
     }
 
-    db.collection(id_interval).find({
-      "timestamp": {
-        $gte: fromDate,
-        $lte: toDate,
-      }
-    }).sort({ timestamp: 1 }).toArray(function (err, information) {
-      if (err) {
-        res.send({ 'error': 'An error has occurred, ' + err });
-      } else {
-        res.header('Access-Control-Allow-Origin', '*');
-        res.send({ information });
-      }
-    });
+    if (fromDate == undefined || toDate == undefined) {
+      db.collection(id_interval).find().sort({ timestamp: 1 }).toArray(function (err, information) {
+        if (err) {
+          res.send({ 'error': 'An error has occurred, ' + err });
+        } else {
+          res.header('Access-Control-Allow-Origin', '*');
+          res.send({ information });
+        }
+      });
+    } else {
+      db.collection(id_interval).find({
+        "timestamp": {
+          $gte: fromDate,
+          $lte: toDate,
+        }
+      }).sort({ timestamp: 1 }).toArray(function (err, information) {
+        if (err) {
+          res.send({ 'error': 'An error has occurred, ' + err });
+        } else {
+          res.header('Access-Control-Allow-Origin', '*');
+          res.send({ information });
+        }
+      });
+    }
   });
 
   app.get(api + '/nodes', (req, res) => {
@@ -126,59 +137,60 @@ module.exports = function (app, db) {
         let nodeInfoLength = nodeInfo.length;
         let setDateIndex = true
 
-        let currentDate = moment(nodeInfo[0].timestamp)
-        let i = 0
+        let currentDate = moment.utc(nodeInfo[0].timestamp)
+        let index = 0
+        console.log("Beginning generating values for '", id_interval, "'")
         while (currentDate.valueOf() < toDate.valueOf()) {
           const key = dateIndexFrom.format()
-          if ((currentDate.valueOf() >= dateIndexFrom.valueOf() && currentDate.valueOf() <= dateIndexTo.valueOf()) && i < nodeInfoLength) {
+          if ((currentDate.valueOf() >= dateIndexFrom.valueOf() && currentDate.valueOf() <= dateIndexTo.valueOf()) && index < nodeInfoLength) {
             let elem = newDict[key]
 
             if (elem == undefined) {
               elem = []
-              elem[0] = nodeInfo[i].latency
-              elem[1] = nodeInfo[i].type == "coverage" ? nodeInfo[i].coverage : -120
+              elem[0] = nodeInfo[index].latency
+              elem[1] = nodeInfo[index].type == "coverage" ? nodeInfo[index].coverage : -120
               elem[2] = 1
-              elem[3] = nodeInfo[i].type == "coverage" ? 1 : 0
+              elem[3] = nodeInfo[index].type == "coverage" ? 1 : 0
             } else {
-              elem[0] = (nodeInfo[i].latency + elem[0]) / 2
+              elem[0] = (nodeInfo[index].latency + elem[0]) / 2
               elem[2] += 1
 
-              if (nodeInfo[i].type == "coverage") {
-                if (elem[1] == -120) elem[1] = nodeInfo[i].coverage
-                else (nodeInfo[i].coverage + elem[1]) / 2
+              if (nodeInfo[index].type == "coverage") {
+                if (elem[1] == -120) elem[1] = nodeInfo[index].coverage
+                else (nodeInfo[index].coverage + elem[1]) / 2
                 elem[3] += 1
               }
             }
 
             newDict[key] = elem
-            i++
-            if (i < nodeInfoLength) currentDate = moment.utc(nodeInfo[i].timestamp)
+            index += 1
+            if (index < nodeInfoLength) currentDate = moment.utc(nodeInfo[index].timestamp)
 
             if (currentDate.valueOf() >= dateIndexTo.valueOf()) {
               dateIndexFrom = moment.utc(dateIndexFrom.valueOf() + coeff)
               dateIndexTo = moment.utc(dateIndexFrom.valueOf() + coeff)
             }
           } else {
-            if (i == nodeInfoLength) break
-
             dateIndexFrom = moment.utc(dateIndexFrom.valueOf() + coeff)
             dateIndexTo = moment.utc(dateIndexTo.valueOf() + coeff)
 
-            if (i == nodeInfoLength) currentDate = dateIndexTo
+            newDict[key] = [0, -120, 0, 0]
+
+            if (index == nodeInfoLength) currentDate = dateIndexTo
           }
         }
 
         let count = 0
+        let dataCollection = []
         for (var key in newDict) {
           let timeKey = moment.utc(key).valueOf()
           timeKey = moment.utc(key).toISOString()
           let data = { timestamp: key, latency: newDict[key][0], coverage: newDict[key][1], latencyDataPoints: newDict[key][2], coverageDataPoints: newDict[key][3] }
-          db.collection(id_interval).insert(data, (err, result) => {
-            if (err) {
-              console.log("Error", err)
-            }
-          });
+          dataCollection.push(data)
         }
+
+        console.log("Insert '", dataCollection.length,"' elements into '", id_interval, "'")
+        db.collection(id_interval).insertMany(dataCollection, { ordered: true });
       }
     });
   }

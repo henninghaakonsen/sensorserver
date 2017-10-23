@@ -1,6 +1,7 @@
 var ObjectID = require('mongodb').ObjectID;
 var moment = require('moment')
 let api = '/api';
+const cluster = require('cluster');
 
 module.exports = function (app, db) {
   app.get(api + '/nodes/:id', (req, res) => {
@@ -74,6 +75,8 @@ module.exports = function (app, db) {
 
     data.latency = (currentTime.valueOf() - timestamp.valueOf()) / 1000;
     data.coverage = data.type == "coverage" ? data.coverage * 1.0 : 0
+  
+    console.log("data: ", data, ` - Worker ${process.pid}`)
 
     const id = req.params.id;
     const displayName = data.displayName;
@@ -112,7 +115,7 @@ module.exports = function (app, db) {
     });
   });
 
-  var calculateAndInsertAverages = function (id, interval, id_interval) {
+  const calculateAndInsertAverages = function (id, interval, id_interval) {
     db.collection(id).find({}).sort({ timestamp: 1 }).toArray(function (err, nodeInfo) {
       if (err) {
         console.log("Error when collecting information about node id '" + id + "' - ", err)
@@ -189,13 +192,15 @@ module.exports = function (app, db) {
           dataCollection.push(data)
         }
 
-        console.log("Insert '", dataCollection.length,"' elements into '", id_interval, "'")
+        console.log("Insert '", dataCollection.length, "' elements into '", id_interval, "'")
         db.collection(id_interval).insertMany(dataCollection, { ordered: true });
       }
     });
-  }
+  };
 
   var createAvgCollection = function (id, interval) {
+    console.log(`Create average worker ${process.pid}`);
+  
     // Drop the old collection and generate new data
     let id_interval = id + "_" + interval
 
@@ -213,7 +218,7 @@ module.exports = function (app, db) {
         }
       }
 
-      calculateAndInsertAverages(id, interval, id_interval);
+      calculateAndInsertAverages(id, interval, id_interval)
     });
   };
 

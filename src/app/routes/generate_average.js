@@ -1,6 +1,8 @@
 var moment = require('moment')
 const cluster = require('cluster')
 
+var Worker = require('webworker-threads');
+
 module.exports = function (db) {
     this.calculateAndInsertAverages = function (id, interval, id_interval) {
         db.collection(id).find({}).sort({ timestamp: 1 }).toArray(function (err, nodeInfo) {
@@ -103,21 +105,25 @@ module.exports = function (db) {
                 }
             }
 
-            calculateAndInsertAverages(id, interval, id_interval)
+            this.calculateAndInsertAverages(id, interval, id_interval)
         });
     };
 
-    this.avgCreation = function (interval) {
-        console.log("avg creation", interval)
+    const avg_creation_internal = function (interval) {
         db.collection('nodes').find({}).toArray(function (err, nodes) {
             if (err) {
                 console.log("Error", err)
             } else {
                 for (let i = 0; i < nodes.length; i++) {
-                    createAvgCollection(nodes[i].id, interval)
+                    this.createAvgCollection(nodes[i].id, interval)
                 }
             }
         });
+    }
+
+    this.avgCreation = function (interval) {
+        console.log("avg creation", interval)
+        Worker.create().eval(avg_creation_internal(interval))
     }
 
     if (cluster.worker.id == 1) {

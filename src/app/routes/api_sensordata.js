@@ -78,6 +78,8 @@ module.exports = function (app, db) {
     data.latency = (currentTime.valueOf() - timestamp.valueOf()) / 1000;
     data.coverage = data.type == "coverage" ? data.coverage * 1.0 : 0
 
+    console.log(data, " - pid: ", process.pid)
+
     const id = req.params.id;
     const displayName = data.displayName;
 

@@ -29,7 +29,8 @@
     "react": "^15.6.1",
     "react-dom": "^15.6.1",
     "react-moment": "^0.6.5",
-    "threads": "^0.8.1"
+    "threads": "^0.8.1",
+    "webworker-threads": "^0.7.13"
   },
   "devDependencies": {
     "nodemon": "^1.11.0"

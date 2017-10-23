@@ -31,13 +31,16 @@ MongoClient.connect(db.url, (err, database) => {
 
     cluster.on('exit', (worker, code, signal) => {
       console.log(`worker ${worker.process.pid} died`);
+      cluster.fork();
     });
   } else {
-    console.log(`Worker ${process.pid} started`);
-    
-    require('./app/routes')(app, database);
-    app.listen(port, () => {
-      console.log(`Worker ${process.pid} started on `, port);
-    });
+    if (cluster.worker.id == 1) {
+      require('./app/routes/generate_average')(database);
+    } else {
+      require('./app/routes/api_sensordata')(app, database);
+      app.listen(port, () => {
+        console.log(`Worker ${process.pid} started on`, port);
+      });
+    }
   }
 })

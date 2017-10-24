@@ -34,7 +34,7 @@ MongoClient.connect(db.url, (err, database) => {
       cluster.fork();
     });
   } else {
-    if (cluster.worker.id == 1) {
+    if (cluster.worker.id == 1 && numCPUs > 0) {
       require('./app/routes/generate_average')(database);
     } else {
       require('./app/routes/api_sensordata')(app, database);

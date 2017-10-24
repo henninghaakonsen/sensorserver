@@ -4,11 +4,24 @@ const cluster = require('cluster')
 var Worker = require('webworker-threads');
 
 module.exports = function (db) {
-    this.calculateAndInsertAverages = function (id, interval, id_interval) {
-        db.collection(id).find({}).sort({ timestamp: 1 }).toArray(function (err, nodeInfo) {
+    const calculateAndInsertAveragesInternal = function (nodeInfo, id, interval) {
+        let id_interval = id + "_" + interval
+
+        db.collection(id_interval).find({}).limit(2).toArray(function (err, information) {
             if (err) {
-                console.log("Error when collecting information about node id '" + id + "' - ", err)
+                console.log("Error when searching for id_interval collection - ", err)
+                return null
             } else {
+                if (information.length > 0) {
+                    db.collection(id_interval).drop(function (err) {
+                        if (err) {
+                            console.log("Error drop: ", err)
+                        }
+                    });
+                }
+            }
+
+            db.collection(id_interval).find({}).limit(2).toArray(function (err, information) {
                 let newDict = {}
 
                 var coeff = 1000 * 60 * interval
@@ -83,29 +96,17 @@ module.exports = function (db) {
 
                 console.log("Insert '", dataCollection.length, "' elements into '", id_interval, "'")
                 db.collection(id_interval).insertMany(dataCollection, { ordered: true });
-            }
+            });
         });
-    };
+    }
 
-    this.createAvgCollection = function (id, interval) {
-        // Drop the old collection and generate new data
-        let id_interval = id + "_" + interval
-
-        db.collection(id_interval).find({}).limit(2).toArray(function (err, information) {
+    this.calculateAndInsertAverages = function (id, interval) {
+        db.collection(id).find({}).sort({ timestamp: 1 }).toArray(function (err, nodeInfo) {
             if (err) {
-                console.log("Error when searching for id_interval collection - ", err)
-                return null
+                console.log("Error when collecting information about node id '" + id + "' - ", err)
             } else {
-                if (information.length > 0) {
-                    db.collection(id_interval).drop(function (err) {
-                        if (err) {
-                            console.log("Error drop: ", err)
-                        }
-                    });
-                }
+                calculateAndInsertAveragesInternal(nodeInfo, id, interval)
             }
-
-            this.calculateAndInsertAverages(id, interval, id_interval)
         });
     };
 
@@ -115,7 +116,7 @@ module.exports = function (db) {
                 console.log("Error", err)
             } else {
                 for (let i = 0; i < nodes.length; i++) {
-                    this.createAvgCollection(nodes[i].id, interval)
+                    this.calculateAndInsertAverages(nodes[i].id, interval)
                 }
             }
         });

@@ -8,7 +8,6 @@ var public = __dirname + "/app/public/";
 const port = process.env.PORT || 8020;
 
 const cluster = require('cluster');
-const http = require('http');
 const numCPUs = require('os').cpus().length;
 
 app.use(express.static(path.join(__dirname, 'app/public')))
@@ -29,6 +28,7 @@ MongoClient.connect(db.url, (err, database) => {
       cluster.fork();
     }
 
+    // Respawn workers on exit
     cluster.on('exit', (worker, code, signal) => {
       console.log(`worker ${worker.process.pid} died`);
       cluster.fork();

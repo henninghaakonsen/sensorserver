@@ -768,6 +768,10 @@ file-uri-to-path@1:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/file-uri-to-path/-/file-uri-to-path-1.0.0.tgz#553a7b8446ff6f684359c445f1e37a05dacc33dd"
 
+filelogger@^1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/filelogger/-/filelogger-1.0.3.tgz#f573af5b3bb135cf7809a6233c85b630cc520a2c"
+
 filename-regex@^2.0.0:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/filename-regex/-/filename-regex-2.0.1.tgz#c1c4b9bee3e09725ddb106b75c1e301fe2f18b26"

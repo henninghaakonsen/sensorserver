@@ -21,6 +21,7 @@
     "coap": "^0.21.0",
     "dateformat": "^3.0.2",
     "express": "^4.15.4",
+    "filelogger": "^1.0.3",
     "lime-coap": "^0.2.13",
     "log4js": "^2.3.10",
     "material-ui": "^0.19.1",

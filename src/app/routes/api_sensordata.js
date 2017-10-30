@@ -4,7 +4,7 @@ let api = '/api';
 const cluster = require('cluster');
 
 var Logger = require("filelogger");
-const logger = new Logger("error", "info", "average.log");
+const logger = new Logger("error", "info", "general.log");
 
 module.exports = function (app, db) {
   require('./generate_average')(db);

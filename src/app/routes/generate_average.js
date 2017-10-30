@@ -12,7 +12,7 @@ module.exports = function (db) {
 
         db.collection(id_interval).find({}).limit(2).toArray(function (err, information) {
             if (err) {
-                logger.log("error", "Error when searching for id_interval collection - ", err)
+                logger.log("error", ("Error when searching for id_interval collection - ", err))
                 return null
             } else {
                 if (information.length > 0) {
@@ -47,7 +47,7 @@ module.exports = function (db) {
 
                 let currentDate = moment.utc(nodeInfo[0].timestamp)
                 let index = 0
-                logger.log("info", "Beginning generating values for '", id_interval, "'")
+                logger.log("info", ("Beginning generating values for '", id_interval, "'"))
                 while (currentDate.valueOf() < toDate.valueOf()) {
                     const key = dateIndexFrom.format()
                     if ((currentDate.valueOf() >= dateIndexFrom.valueOf() && currentDate.valueOf() <= dateIndexTo.valueOf()) && index < nodeInfoLength) {
@@ -97,7 +97,7 @@ module.exports = function (db) {
                     dataCollection.push(data)
                 }
 
-                logger.log("info", "Insert '", dataCollection.length, "' elements into '", id_interval, "'")
+                logger.log("info", ("Insert '", dataCollection.length, "' elements into '", id_interval, "'"))
                 db.collection(id_interval).insertMany(dataCollection, { ordered: true });
             });
         });
@@ -106,7 +106,7 @@ module.exports = function (db) {
     this.calculateAndInsertAverages = function (id, interval) {
         db.collection(id).find({}).sort({ timestamp: 1 }).toArray(function (err, nodeInfo) {
             if (err) {
-                logger.log("error", "Error when collecting information about node id '" + id + "' - ", err)
+                logger.log("error", ("Error when collecting information about node id '" + id + "' - ", err))
             } else {
                 calculateAndInsertAveragesInternal(nodeInfo, id, interval)
             }
@@ -126,7 +126,7 @@ module.exports = function (db) {
     }
 
     this.avgCreation = function (interval) {
-        logger.log("info", "avg creation", interval)
+        logger.log("info", ("avg creation", interval))
         Worker.create().eval(avg_creation_internal(interval))
     }
 

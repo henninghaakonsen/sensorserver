@@ -17,11 +17,14 @@ app.get('/', function (req, res) {
   res.sendFile(path.join(public + "index.html"));
 });
 
+var Logger = require("filelogger");
+const logger = new Logger("error", "info", "general.log");
+
 MongoClient.connect(db.url, (err, database) => {
   if (err) return console.log(err)
 
   if (cluster.isMaster) {
-    console.log(`Master ${process.pid} is running`);
+    logger.log("info", `Master ${process.pid} is running`);
 
     // Fork workers.
     for (let i = 0; i < numCPUs; i++) {
@@ -30,7 +33,7 @@ MongoClient.connect(db.url, (err, database) => {
 
     // Respawn workers on exit
     cluster.on('exit', (worker, code, signal) => {
-      console.log(`worker ${worker.process.pid} died`);
+      logger.log("error", `worker ${worker.process.pid} died`);
       cluster.fork();
     });
   } else {
@@ -39,7 +42,7 @@ MongoClient.connect(db.url, (err, database) => {
     } else {
       require('./app/routes/api_sensordata')(app, database);
       app.listen(port, () => {
-        console.log(`Worker ${process.pid} started on`, port);
+        logger.log("info", (`Worker ${process.pid} started on`, port));
       });
     }
   }

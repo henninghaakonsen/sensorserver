@@ -3,6 +3,14 @@ var moment = require('moment')
 let api = '/api';
 const cluster = require('cluster');
 
+const log4js = require('log4js');
+log4js.configure({
+  appenders: { nodes: { type: 'file', filename: 'node.log' } },
+  categories: { default: { appenders: ['nodes'], level: 'warn' } }
+});
+
+const logger = log4js.getLogger('nodes');
+
 module.exports = function (app, db) {
   require('./generate_average')(db);
 
@@ -78,7 +86,7 @@ module.exports = function (app, db) {
     data.latency = (currentTime.valueOf() - timestamp.valueOf()) / 1000;
     data.coverage = data.type == "coverage" ? data.coverage * 1.0 : 0
 
-    console.log(data, " - pid: ", process.pid)
+    logger.info(data, " - pid: ", process.pid)
 
     const id = req.params.id;
     const displayName = data.displayName;

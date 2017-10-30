@@ -3,19 +3,27 @@ const cluster = require('cluster')
 
 var Worker = require('webworker-threads');
 
+const log4js = require('log4js');
+log4js.configure({
+  appenders: { node_average: { type: 'file', filename: 'node.log' } },
+  categories: { default: { appenders: ['node_average'], level: 'info' } }
+});
+
+const logger = log4js.getLogger('node_average');
+
 module.exports = function (db) {
     const calculateAndInsertAveragesInternal = function (nodeInfo, id, interval) {
         let id_interval = id + "_" + interval
 
         db.collection(id_interval).find({}).limit(2).toArray(function (err, information) {
             if (err) {
-                console.log("Error when searching for id_interval collection - ", err)
+                logger.info("Error when searching for id_interval collection - ", err)
                 return null
             } else {
                 if (information.length > 0) {
                     db.collection(id_interval).drop(function (err) {
                         if (err) {
-                            console.log("Error drop: ", err)
+                            logger.info("Error drop: ", err)
                         }
                     });
                 }
@@ -44,7 +52,7 @@ module.exports = function (db) {
 
                 let currentDate = moment.utc(nodeInfo[0].timestamp)
                 let index = 0
-                console.log("Beginning generating values for '", id_interval, "'")
+                logger.info("Beginning generating values for '", id_interval, "'")
                 while (currentDate.valueOf() < toDate.valueOf()) {
                     const key = dateIndexFrom.format()
                     if ((currentDate.valueOf() >= dateIndexFrom.valueOf() && currentDate.valueOf() <= dateIndexTo.valueOf()) && index < nodeInfoLength) {
@@ -94,7 +102,7 @@ module.exports = function (db) {
                     dataCollection.push(data)
                 }
 
-                console.log("Insert '", dataCollection.length, "' elements into '", id_interval, "'")
+                logger.info("Insert '", dataCollection.length, "' elements into '", id_interval, "'")
                 db.collection(id_interval).insertMany(dataCollection, { ordered: true });
             });
         });
@@ -103,7 +111,7 @@ module.exports = function (db) {
     this.calculateAndInsertAverages = function (id, interval) {
         db.collection(id).find({}).sort({ timestamp: 1 }).toArray(function (err, nodeInfo) {
             if (err) {
-                console.log("Error when collecting information about node id '" + id + "' - ", err)
+                logger.info("Error when collecting information about node id '" + id + "' - ", err)
             } else {
                 calculateAndInsertAveragesInternal(nodeInfo, id, interval)
             }
@@ -113,7 +121,7 @@ module.exports = function (db) {
     const avg_creation_internal = function (interval) {
         db.collection('nodes').find({}).toArray(function (err, nodes) {
             if (err) {
-                console.log("Error", err)
+                logger.info("Error", err)
             } else {
                 for (let i = 0; i < nodes.length; i++) {
                     this.calculateAndInsertAverages(nodes[i].id, interval)
@@ -123,12 +131,12 @@ module.exports = function (db) {
     }
 
     this.avgCreation = function (interval) {
-        console.log("avg creation", interval)
+        logger.info("avg creation", interval)
         Worker.create().eval(avg_creation_internal(interval))
     }
 
     if (cluster.worker.id == 1) {
-        console.log(`Worker ${process.pid} - set interval`)
+        logger.info(`Worker ${process.pid} - set interval`)
         setInterval(this.avgCreation, 1000 * 60 * 5, 5);
         setInterval(this.avgCreation, 1000 * 60 * 10, 10);
         setInterval(this.avgCreation, 1000 * 60 * 30, 30);

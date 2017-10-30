@@ -85,7 +85,7 @@ module.exports = function (app, db) {
     data.latency = (currentTime.valueOf() - timestamp.valueOf()) / 1000;
     data.coverage = data.type == "coverage" ? data.coverage * 1.0 : 0
 
-    logger.log("info", data + " \npid: ", process.pid)
+    logger.log("info", "latency: " + data.latency + "\ncoverage: " + data.coverage + "\timestamp: " + data.timestamp + " \npid: " + process.pid)
 
     const id = req.params.id;
     const displayName = data.displayName;

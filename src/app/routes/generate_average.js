@@ -127,7 +127,7 @@ module.exports = function (db) {
     }
 
     this.avgCreation = function (interval) {
-        logger.log("info", ("avg creation", interval))
+        logger.log("info", "avg creation" + interval)
         Worker.create().eval(avg_creation_internal(interval))
     }
 

@@ -4,7 +4,8 @@
   "description": "Server hosting sensordata",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon src/server.js"
+    "start": "node src/server.js",
+    "dev-start": "node src/server.js"
   },
   "repository": {
     "type": "git",
@@ -18,19 +19,10 @@
   "homepage": "https://github.com/henninghaakonsen/sensorserver#readme",
   "dependencies": {
     "body-parser": "^1.17.2",
-    "coap": "^0.21.0",
-    "dateformat": "^3.0.2",
     "express": "^4.15.4",
     "filelogger": "^1.0.3",
-    "lime-coap": "^0.2.13",
-    "log4js": "^2.3.10",
-    "material-ui": "^0.19.1",
     "moment": "^2.19.1",
     "mongodb": "^2.2.31",
-    "nodemon": "^1.11.0",
-    "react": "^15.6.1",
-    "react-dom": "^15.6.1",
-    "react-moment": "^0.6.5",
     "threads": "^0.8.1",
     "webworker-threads": "^0.7.13"
   },

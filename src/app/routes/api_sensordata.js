@@ -27,7 +27,7 @@ module.exports = function (app, db) {
     if (fromDate == undefined || toDate == undefined) {
       db.collection(id_interval).find().sort({ timestamp: 1 }).toArray(function (err, information) {
         if (err) {
-          logger.log("error", "find failed: ", err);
+          logger.log("error", "find failed: " + err);
           res.send({ 'error': 'An error has occurred, ' + err });
         } else {
           res.header('Access-Control-Allow-Origin', '*');
@@ -42,7 +42,7 @@ module.exports = function (app, db) {
         }
       }).sort({ timestamp: 1 }).toArray(function (err, information) {
         if (err) {
-          logger.log("error", "find failed: ", err);
+          logger.log("error", "find failed: " + err);
           res.send({ 'error': 'An error has occurred, ' + err });
         } else {
           res.header('Access-Control-Allow-Origin', '*');
@@ -55,7 +55,7 @@ module.exports = function (app, db) {
   app.get(api + '/nodes', (req, res) => {
     db.collection('nodes').find({}).toArray(function (err, nodes) {
       if (err) {
-        logger.log("error", "get failed: ", err);
+        logger.log("error", "get failed: " + err);
         res.send({ 'error': 'An error has occurred' });
       } else {
         res.header('Access-Control-Allow-Origin', '*');
@@ -68,7 +68,7 @@ module.exports = function (app, db) {
     const data = req.body;
     db.collection('nodes').insert(data, (err, result) => {
       if (err) {
-        logger.log("error", "insert failed: ", err);
+        logger.log("error", "insert failed: " + err);
         res.send({ 'error': 'An error has occurred' });
       } else {
         res.send(result.ops[0]);
@@ -85,7 +85,7 @@ module.exports = function (app, db) {
     data.latency = (currentTime.valueOf() - timestamp.valueOf()) / 1000;
     data.coverage = data.type == "coverage" ? data.coverage * 1.0 : 0
 
-    logger.log("info", data, " - pid: ", process.pid)
+    logger.log("info", data + " \npid: ", process.pid)
 
     const id = req.params.id;
     const displayName = data.displayName;
@@ -97,7 +97,7 @@ module.exports = function (app, db) {
         let data = { 'id': id, 'displayName': displayName }
         db.collection('nodes').insert(data, (err, result) => {
           if (err) {
-            logger.log("error", "find failed: ", err);
+            logger.log("error", "find failed: " + err);
             res.send({ 'error': 'An error has occurred' });
           }
         });
@@ -106,7 +106,7 @@ module.exports = function (app, db) {
 
     db.collection(id).insert(data, (err, result) => {
       if (err) {
-        logger.log("error", "insert failed: ", err);
+        logger.log("error", "insert failed: " + err);
         res.send({ 'error': 'An error has occurred' });
       } else {
         res.send(result.ops[0]);
@@ -119,7 +119,7 @@ module.exports = function (app, db) {
 
     db.collection('nodes').deleteOne({ id }, (err, result) => {
       if (err) {
-        logger.log("error", "delete failed: ", err);
+        logger.log("error", "delete failed: " + err);
         res.send({ 'error': 'An error has occurred' });
       } else {
         res.send({ 'sucess': 'id: \'' + id + '\' removed' });

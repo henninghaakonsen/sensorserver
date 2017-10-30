@@ -42,7 +42,7 @@ MongoClient.connect(db.url, (err, database) => {
     } else {
       require('./app/routes/api_sensordata')(app, database);
       app.listen(port, () => {
-        logger.log("info", (`Worker ${process.pid} started on`, port));
+        logger.log("info", `Worker ${process.pid} started on ` + port);
       });
     }
   }

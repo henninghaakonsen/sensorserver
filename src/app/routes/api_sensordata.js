@@ -6,10 +6,10 @@ const cluster = require('cluster');
 var Logger = require("filelogger");
 const logger = new Logger("error", "info", "general.log");
 
-module.exports = function (app, db) {
+module.exports = function (server, db) {
   require('./generate_average')(db);
 
-  app.get(api + '/nodes/:id', (req, res) => {
+  server.get(api + '/nodes/:id', (req, res) => {
     const id = req.params.id;
     const interval = req.query.interval;
 
@@ -52,7 +52,7 @@ module.exports = function (app, db) {
     }
   });
 
-  app.get(api + '/nodes', (req, res) => {
+  server.get(api + '/nodes', (req, res) => {
     db.collection('nodes').find({}).toArray(function (err, nodes) {
       if (err) {
         logger.log("error", "get failed: " + err);
@@ -64,7 +64,7 @@ module.exports = function (app, db) {
     });
   });
 
-  app.post(api + '/nodes', (req, res) => {
+  server.post(api + '/nodes', (req, res) => {
     const data = req.body;
     db.collection('nodes').insert(data, (err, result) => {
       if (err) {
@@ -76,7 +76,7 @@ module.exports = function (app, db) {
     });
   });
 
-  app.post(api + '/nodes/:id', (req, res) => {
+  server.post(api + '/nodes/:id', (req, res) => {
     let data = req.body;
     let timestamp = moment.utc(data.timestamp);
     data.timestamp = timestamp.format()
@@ -114,7 +114,7 @@ module.exports = function (app, db) {
     });
   });
 
-  app.post(api + '/nodes/remove/:id', (req, res) => {
+  server.post(api + '/nodes/remove/:id', (req, res) => {
     const id = req.params.id;
 
     db.collection('nodes').deleteOne({ id }, (err, result) => {
@@ -127,7 +127,7 @@ module.exports = function (app, db) {
     });
   });
 
-  app.post(api + '/generateAverage', (req, res) => {
+  server.post(api + '/generateAverage', (req, res) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.send("OK");
 
@@ -137,7 +137,7 @@ module.exports = function (app, db) {
     avgCreation(60)
   });
 
-  app.post(api + '/nodes/generateAverage/:id', (req, res) => {
+  server.post(api + '/nodes/generateAverage/:id', (req, res) => {
     const id = req.params.id;
 
     res.header('Access-Control-Allow-Origin', '*');

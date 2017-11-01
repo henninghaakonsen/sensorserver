@@ -30,8 +30,6 @@ module.exports = function (db) {
 
                 var coeff = 1000 * 60 * interval
 
-                let toDate = moment.utc()
-
                 let dateIndexFrom = moment.utc((Math.round(moment.utc(nodeInfo[0].timestamp).valueOf() / coeff) * coeff) - coeff)
                 let dateIndexTo = moment.utc(dateIndexFrom.valueOf() + coeff)
 
@@ -49,8 +47,8 @@ module.exports = function (db) {
                 let currentDate = moment.utc(nodeInfo[0].timestamp)
                 let index = 0
                 logger.log("info", "Beginning generating values for '" + id_interval + "'")
-                while (currentDate.valueOf() < toDate.valueOf()) {
-                    const key = dateIndexFrom.format()
+                while (index < nodeInfoLength) {
+                    const key = dateIndexTo.format()
                     if ((currentDate.valueOf() >= dateIndexFrom.valueOf() && currentDate.valueOf() <= dateIndexTo.valueOf()) && index < nodeInfoLength) {
                         let elem = newDict[key]
 

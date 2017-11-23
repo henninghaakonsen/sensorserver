@@ -7,7 +7,7 @@ var Logger = require("filelogger");
 const logger = new Logger("error", "info", "general.log");
 
 module.exports = function (server, db) {
-  require('./generate_average')(db);
+  require('./db_utils')(db);
 
   server.get(api + '/nodes/:id', (req, res) => {
     const id = req.params.id;
@@ -78,41 +78,9 @@ module.exports = function (server, db) {
 
   server.post(api + '/nodes/:id', (req, res) => {
     let data = req.body;
-    let timestamp = moment.utc(data.timestamp);
-    data.timestamp = timestamp.format()
-    var currentTime = moment.utc();
-
-    data.latency = (currentTime.valueOf() - timestamp.valueOf()) / 1000;
-    data.coverage = data.type == "coverage" ? data.coverage * 1.0 : 0
-
-    logger.log("info", "latency: " + data.latency + "\ncoverage: " + data.coverage + "\timestamp: " + data.timestamp + " \npid: " + process.pid)
-
     const id = req.params.id;
-    const displayName = data.displayName;
-
-    //find if the node id exists
-    db.collection('nodes').find({ id: id }).toArray(function (err, doc) {
-      // It does not exist, so add it to the db
-      if (doc.length == 0) {
-        let data = { 'id': id, 'displayName': displayName }
-        db.collection('nodes').insert(data, (err, result) => {
-          if (err) {
-            logger.log("error", "find failed: " + err);
-            res.send({ 'error': 'An error has occurred' });
-          }
-        });
-      }
-    });
-
-    db.collection(id).insert(data, (err, result) => {
-      if (err) {
-        logger.log("error", "insert failed: " + err);
-        res.send({ 'error': 'An error has occurred' });
-      } else {
-        res.send(result.ops[0]);
-      }
-    });
-  });
+    post_id(id, data, req, res, 'HTTP')
+  })
 
   server.post(api + '/nodes/remove/:id', (req, res) => {
     const id = req.params.id;

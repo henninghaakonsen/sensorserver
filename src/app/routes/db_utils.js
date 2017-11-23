@@ -8,6 +8,46 @@ const gen_logger = new Logger("info", "info", "general.log");
 const logger = new Logger("info", "info", "average.log");
 
 module.exports = function (db) {
+    this.post_id = function (id, data, req, res, server) {
+        let timestamp = moment.utc(data.timestamp);
+        data.timestamp = timestamp.format()
+        var currentTime = moment.utc();
+
+        data.latency = (currentTime.valueOf() - timestamp.valueOf()) / 1000;
+        data.coverage = data.type == "coverage" ? data.coverage * 1.0 : 0
+        if (server == 'HTTP') data.ip = req.ip
+
+        logger.log("info", data.latency + " - " + data.coverage + " - " + data.timestamp + " - " + data.ip)
+        if (data.latency > 2) logger.error("error", "latency high: " + data.latency)
+
+        const displayName = data.displayName;
+
+        //find if the node id exists
+        db.collection('nodes').find({ id: id }).toArray(function (err, doc) {
+            // It does not exist, so add it to the db
+            if (doc.length == 0) {
+                let data = { 'id': id, 'displayName': displayName }
+                db.collection('nodes').insert(data, (err, result) => {
+                    if (err) {
+                        logger.log("error", "find failed: " + err);
+                        res.send({ 'error': 'An error has occurred' });
+                    }
+                });
+            }
+        });
+
+        // Insert data
+        db.collection(id).insert(data, (err, result) => {
+            if (err) {
+                logger.log("error", "insert failed: " + err);
+                res.send({ 'error': 'An error has occurred' });
+            } else {
+                if (server == 'HTTP') res.send(result.ops[0]);
+                else if (server == 'COAP') res.end(result.ops[0])
+            }
+        });
+    }
+
     const calculateAndInsertAveragesInternal = function (nodeInfo, id, interval) {
         let id_interval = id + "_" + interval
 
@@ -47,9 +87,12 @@ module.exports = function (db) {
                 let currentDate = moment.utc(nodeInfo[0].timestamp)
                 let index = 0
                 logger.log("info", "Beginning generating values for '" + id_interval + "'")
+                
+                let emptyArea = true
                 while (index < nodeInfoLength) {
                     const key = dateIndexTo.format()
                     if ((currentDate.valueOf() >= dateIndexFrom.valueOf() && currentDate.valueOf() <= dateIndexTo.valueOf()) && index < nodeInfoLength) {
+                        emptyArea = true
                         let elem = newDict[key]
 
                         if (elem == undefined) {
@@ -81,7 +124,8 @@ module.exports = function (db) {
                         dateIndexFrom = moment.utc(dateIndexFrom.valueOf() + coeff)
                         dateIndexTo = moment.utc(dateIndexTo.valueOf() + coeff)
 
-                        newDict[key] = [0, -120, 0, 0]
+                        if (emptyArea) newDict[key] = [0, -120, 0, 0]
+                        emptyArea = false
 
                         if (index == nodeInfoLength) currentDate = dateIndexTo
                     }
@@ -130,7 +174,7 @@ module.exports = function (db) {
     }
 
     if (cluster.worker.id == 1) {
-        gen_logger.log("info", `Worker ${process.pid} - set interval`)
+        gen_logger.log("info", `Worker ${process.pid} started... Analysis worker`)
         setInterval(this.avgCreation, 1000 * 60 * 5, 5);
         setInterval(this.avgCreation, 1000 * 60 * 10, 10);
         setInterval(this.avgCreation, 1000 * 60 * 30, 30);

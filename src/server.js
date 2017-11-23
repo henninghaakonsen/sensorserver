@@ -7,10 +7,14 @@ var path = require('path');
 var public = __dirname + "/app/public/";
 const port = process.env.PORT || 8020;
 
+var coap = require('coap')
+var coap_server = coap.createServer()
+
 const cluster = require('cluster');
 const numCPUs = require('os').cpus().length;
 
 server.use(express.static(path.join(__dirname, 'app/public')))
+server.enable('trust proxy')
 
 server.use(bodyParser.urlencoded({ extended: true }));
 server.get('/', function (req, res) {
@@ -27,7 +31,7 @@ MongoClient.connect(db.url, (err, database) => {
     logger.log("info", `Master ${process.pid} is running`);
 
     // Fork workers.
-    for (let i = 0; i < numCPUs - 2; i++) {
+    for (let i = 0; i < numCPUs; i++) {
       cluster.fork();
     }
 
@@ -37,13 +41,23 @@ MongoClient.connect(db.url, (err, database) => {
       cluster.fork();
     });
   } else {
-    if (cluster.worker.id == 1 && numCPUs > 1) {
-      require('./app/routes/generate_average')(database);
+    const id = cluster.worker.id
+    if (id == 1 && numCPUs > 1) {
+      require('./app/routes/db_utils')(database);
+    } else if (id > numCPUs / 2) {
+      require('./app/routes/api_coap')(coap_server, database);
+      coap_server.listen(port, () => {
+        logger.log("info", `Worker ${process.pid} started coap server on ` + port);
+      })
     } else {
       require('./app/routes/api_sensordata')(server, database);
       server.listen(port, () => {
-        logger.log("info", `Worker ${process.pid} started on ` + port);
+        logger.log("info", `Worker ${process.pid} started http server on ` + port);
       });
     }
   }
 })
+
+
+
+

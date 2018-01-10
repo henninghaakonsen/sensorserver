@@ -24,10 +24,9 @@ server.get('/', function (req, res) {
 var Logger = require("filelogger");
 const logger = new Logger("error", "info", "general.log");
 
-const fork_worker = function () {
-  const worker = cluster.fork();
+const notify_worker = function ( worker, id ) {
   worker.on('message', function (msg) {
-    worker.send({ id: worker.id });
+    worker.send({ id: id });
   });
 }
 
@@ -39,14 +38,15 @@ MongoClient.connect(db.url, (err, database) => {
 
     // Fork workers.
     for (let i = 0; i < numCPUs; i++) {
-      fork_worker();
+      const worker = cluster.fork();
+      notify_worker(worker, worker.id);
     }
 
     // Respawn workers on exit
     cluster.on('exit', (worker, code, signal) => {
       logger.log("error", `worker pid: ${worker.process.pid}, id: ${worker.id} died`);
-
-      fork_worker();
+      const new_worker = cluster.fork();
+      notify_worker(new_worker, worker.id);
     });
   } else {
     // Send message to master process to get appropriate id

@@ -174,7 +174,6 @@ module.exports = function (db) {
     }
 
     if (cluster.worker.id == 1) {
-        gen_logger.log("info", `Worker ${process.pid} started... Analysis worker`)
         setInterval(this.avgCreation, 1000 * 60 * 5, 5);
         setInterval(this.avgCreation, 1000 * 60 * 10, 10);
         setInterval(this.avgCreation, 1000 * 60 * 30, 30);

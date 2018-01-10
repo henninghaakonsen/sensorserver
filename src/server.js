@@ -5,7 +5,7 @@ const db = require('../config/db');
 const server = express();
 var path = require('path');
 var public = __dirname + "/app/public/";
-const port = process.env.PORT || 8020;
+const port = process.env.PORT || 9000;
 
 var coap = require('coap')
 var coap_server = coap.createServer()

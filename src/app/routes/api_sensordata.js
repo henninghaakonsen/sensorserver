@@ -35,12 +35,7 @@ module.exports = function (server, db) {
         }
       });
     } else {
-      db.collection(id_interval).find({
-        "timestamp": {
-          $gte: fromDate,
-          $lte: toDate,
-        }
-      }).sort({ timestamp: 1 }).toArray(function (err, information) {
+      db.collection(id_interval).find().sort({ timestamp: 1 }).toArray(function (err, information) {
         if (err) {
           logger.log("error", "find failed: " + err);
           res.send({ 'error': 'An error has occurred, ' + err });

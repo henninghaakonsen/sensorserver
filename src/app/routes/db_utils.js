@@ -9,16 +9,9 @@ const logger = new Logger("info", "info", "average.log");
 
 module.exports = function (db) {
     this.post_id = function (id, data, req, res, server) {
-        let timestamp = moment.utc(data.timestamp);
-        data.timestamp = timestamp.format()
-        var currentTime = moment.utc();
-
-        data.latency = (currentTime.valueOf() - timestamp.valueOf()) / 1000;
-        data.coverage = data.type == "coverage" ? data.coverage * 1.0 : 0
         if (server == 'HTTP') data.ip = req.ip
 
-        logger.log("info", data.latency + " - " + data.coverage + " - " + data.timestamp + " - " + data.ip)
-        if (data.latency > 2) logger.error("error", "latency high: " + data.latency)
+        logger.log("info", data.displayName + ": " + data.temperature + " - " + data.timestamp + " - " + data.ip)
 
         const displayName = data.displayName;
 
@@ -73,14 +66,10 @@ module.exports = function (db) {
                 let dateIndexFrom = moment.utc((Math.round(moment.utc(nodeInfo[0].timestamp).valueOf() / coeff) * coeff) - coeff)
                 let dateIndexTo = moment.utc(dateIndexFrom.valueOf() + coeff)
 
-                let latencyIndex = 0
-                let coverageIndex = 0
+                let temperatureIndex = 0
 
-                let latencyAvg = 0
-                let latencyAvgCount = 0
-
-                let coverageAvg = 0
-                let coverageAvgCount = 0
+                let temperatureAvg = 0
+                let temperatureAvgCount = 0
                 let nodeInfoLength = nodeInfo.length;
                 let setDateIndex = true
 
@@ -95,22 +84,16 @@ module.exports = function (db) {
                         emptyArea = true
                         let elem = newDict[key]
 
+                        console.log(nodeInfo[index].temperature)
                         if (elem == undefined) {
                             elem = []
-                            elem[0] = nodeInfo[index].latency
-                            elem[1] = nodeInfo[index].type == "coverage" ? nodeInfo[index].coverage : -120
-                            elem[2] = 1
-                            elem[3] = nodeInfo[index].type == "coverage" ? 1 : 0
+                            elem[0] = nodeInfo[index].temperature
+                            elem[1] = 1
                         } else {
-                            elem[0] = (nodeInfo[index].latency + elem[0]) / 2
-                            elem[2] += 1
-
-                            if (nodeInfo[index].type == "coverage") {
-                                if (elem[1] == -120) elem[1] = nodeInfo[index].coverage
-                                else (nodeInfo[index].coverage + elem[1]) / 2
-                                elem[3] += 1
-                            }
+                            elem[0] = (parseFloat(nodeInfo[index].temperature) + parseFloat(elem[0])) / 2
+                            elem[1] += 1
                         }
+                        console.log(elem)
 
                         newDict[key] = elem
                         index += 1
@@ -124,7 +107,7 @@ module.exports = function (db) {
                         dateIndexFrom = moment.utc(dateIndexFrom.valueOf() + coeff)
                         dateIndexTo = moment.utc(dateIndexTo.valueOf() + coeff)
 
-                        if (emptyArea) newDict[key] = [0, -120, 0, 0]
+                        if (emptyArea) newDict[key] = [0, 0]
                         emptyArea = false
 
                         if (index == nodeInfoLength) currentDate = dateIndexTo
@@ -136,7 +119,7 @@ module.exports = function (db) {
                 for (var key in newDict) {
                     let timeKey = moment.utc(key).valueOf()
                     timeKey = moment.utc(key).toISOString()
-                    let data = { timestamp: key, latency: newDict[key][0], coverage: newDict[key][1], latencyDataPoints: newDict[key][2], coverageDataPoints: newDict[key][3] }
+                    let data = { timestamp: key, temperature: newDict[key][0], temperaturePoints: newDict[key][1] }
                     dataCollection.push(data)
                 }
 

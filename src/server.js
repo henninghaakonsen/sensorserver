@@ -24,29 +24,50 @@ server.get('/', function (req, res) {
 var Logger = require("filelogger");
 const logger = new Logger("error", "info", "general.log");
 
-const notify_worker = function ( worker, id ) {
-  worker.on('message', function (msg) {
-    worker.send({ id: id });
-  });
-}
-
 MongoClient.connect(db.url, (err, database) => {
+  let worker_map = {}
+
+  const notify_worker = function (worker, id) {
+    worker_map[worker.id] = id
+
+    worker.on('message', function (msg) {
+      worker.send({ id: id });
+    });
+
+    console.log(worker_map)
+  }
+
   if (err) return console.log(err)
 
   if (cluster.isMaster) {
     logger.log("info", `Master ${process.pid} is running`);
 
     // Fork workers.
+    let id_to_worker = 0
     for (let i = 0; i < numCPUs; i++) {
       const worker = cluster.fork();
-      notify_worker(worker, worker.id);
+      if (i == 0 && numCPUs > 1) {
+        id_to_worker = 1;
+      } else if (i < numCPUs / 2) {
+        id_to_worker = 2;
+      } else {
+        id_to_worker = 3;
+      }
+
+      notify_worker(worker, id_to_worker);
     }
+
 
     // Respawn workers on exit
     cluster.on('exit', (worker, code, signal) => {
-      logger.log("error", `worker pid: ${worker.process.pid}, id: ${worker.id} died`);
+      logger.log("info", `worker pid: ${worker.process.pid}, id: ${worker.id} died`);
       const new_worker = cluster.fork();
-      notify_worker(new_worker, worker.id);
+
+      console.log("kind of worker ", worker.id, ": ", worker_map[worker.id])
+      notify_worker(new_worker, worker_map[worker.id]);
+      
+      // Remove old entry from map
+      delete worker_map[worker.id]
     });
   } else {
     // Send message to master process to get appropriate id
@@ -55,20 +76,22 @@ MongoClient.connect(db.url, (err, database) => {
     // Receive message from the master process.
     process.on('message', function (msg) {
       let id = msg.id;
-      
+
       if (id == 1 && numCPUs > 1) {
         logger.log("info", `Worker ${process.pid} : ${id} started analysis worker`)
         require('./app/routes/db_utils')(database);
-      } else if (id > numCPUs / 2) {
-        require('./app/routes/api_coap')(coap_server, database);
-        coap_server.listen(port, () => {
-          logger.log("info", `Worker ${process.pid} : ${id} started coap server on ` + port);
-        })
-      } else {
+                
+      } else if (id == 2) {
         require('./app/routes/api_sensordata')(server, database);
         server.listen(port, () => {
           logger.log("info", `Worker ${process.pid} : ${id} started http server on ` + port);
         });
+        process.exit()
+      } else {
+        require('./app/routes/api_coap')(coap_server, database);
+        coap_server.listen(port, () => {
+          logger.log("info", `Worker ${process.pid} : ${id} started coap server on ` + port);
+        })
       }
     });
   }

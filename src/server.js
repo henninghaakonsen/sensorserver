@@ -33,8 +33,6 @@ MongoClient.connect(db.url, (err, database) => {
     worker.on('message', function (msg) {
       worker.send({ id: id });
     });
-
-    console.log(worker_map)
   }
 
   if (err) return console.log(err)
@@ -63,7 +61,7 @@ MongoClient.connect(db.url, (err, database) => {
       logger.log("info", `worker pid: ${worker.process.pid}, id: ${worker.id} died`);
       const new_worker = cluster.fork();
 
-      console.log("kind of worker ", worker.id, ": ", worker_map[worker.id])
+      logger.log("info", "kind of worker ", worker.id, ": ", worker_map[worker.id])
       notify_worker(new_worker, worker_map[worker.id]);
       
       // Remove old entry from map
@@ -80,13 +78,11 @@ MongoClient.connect(db.url, (err, database) => {
       if (id == 1 && numCPUs > 1) {
         logger.log("info", `Worker ${process.pid} : ${id} started analysis worker`)
         require('./app/routes/db_utils')(database);
-                
       } else if (id == 2) {
         require('./app/routes/api_sensordata')(server, database);
         server.listen(port, () => {
           logger.log("info", `Worker ${process.pid} : ${id} started http server on ` + port);
         });
-        process.exit()
       } else {
         require('./app/routes/api_coap')(coap_server, database);
         coap_server.listen(port, () => {

@@ -9,6 +9,12 @@ const logger = new Logger("info", "info", "average.log");
 
 module.exports = function (db) {
     this.post_id = function (id, data, req, res, server) {
+        if (data.timestamp == undefined) {
+            logger.log("info", "Payload not recognized: " + JSON.stringify(data));
+            res.send({ 'error': 'An error has occurred' });
+            return;
+        }
+
         let timestamp = moment.utc(data.timestamp);
         data.timestamp = timestamp.format()
         var currentTime = moment.utc();
@@ -17,7 +23,7 @@ module.exports = function (db) {
         data.coverage = data.type == "coverage" ? data.coverage * 1.0 : 0
         if (server == 'HTTP') data.ip = req.ip
 
-        logger.log("info", data.latency + " - " + data.coverage + " - " + data.timestamp + " - " + data.ip)
+        logger.log("info", id + ": " + data.latency + " - " + data.coverage + " - " + data.timestamp + " - " + data.ip)
         if (data.latency > 2) logger.error("error", "latency high: " + data.latency)
 
         const displayName = data.displayName;
@@ -173,6 +179,7 @@ module.exports = function (db) {
         Worker.create().eval(avg_creation_internal(interval))
     }
 
+    // TODO check other id
     if (cluster.worker.id == 1) {
         setInterval(this.avgCreation, 1000 * 60 * 5, 5);
         setInterval(this.avgCreation, 1000 * 60 * 10, 10);

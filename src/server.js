@@ -81,7 +81,7 @@ MongoClient.connect(db.url, (err, database) => {
 
       if (id == 1 && numCPUs > 1) {
         logger.log("info", `Worker ${process.pid} : ${id} started analysis worker`)
-        require('./app/routes/db_utils')(database);
+        require('./app/routes/db_utils')(database, id);
       } else if (id == 2) {
         require('./app/routes/api_sensordata')(server, database);
         server.listen(port, () => {
@@ -93,7 +93,6 @@ MongoClient.connect(db.url, (err, database) => {
           logger.log("info", `Worker ${process.pid} : ${id} started coap server on ` + 5683);
         })*/
         
-
         require('./app/routes/api_coap')(udp_server, database);   
         udp_server.on('listening', () => {
           const address = udp_server.address();

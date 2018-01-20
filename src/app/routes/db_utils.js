@@ -7,7 +7,7 @@ var Logger = require("filelogger");
 const gen_logger = new Logger("info", "info", "general.log");
 const logger = new Logger("info", "info", "average.log");
 
-module.exports = function (db) {
+module.exports = function (db, id) {
     this.post_id = function (id, data, req, res, server) {
         if (server == 'HTTP') data.ip = req.ip
 
@@ -156,7 +156,7 @@ module.exports = function (db) {
         Worker.create().eval(avg_creation_internal(interval))
     }
 
-    if (cluster.worker.id == 1) {
+    if (id == 1) {
         setInterval(this.avgCreation, 1000 * 60 * 5, 5);
         setInterval(this.avgCreation, 1000 * 60 * 10, 10);
         setInterval(this.avgCreation, 1000 * 60 * 30, 30);

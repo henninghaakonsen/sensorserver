@@ -58,12 +58,7 @@ MongoClient.connect(db.url, (err, database) => {
       
       if (id == 1 && numCPUs > 1) {
         logger.log("info", `Worker ${process.pid} : ${id} started analysis worker`)
-        require('./app/routes/db_utils')(database);
-      } else if (id > numCPUs / 2) {
-        require('./app/routes/api_coap')(coap_server, database);
-        coap_server.listen(port, () => {
-          logger.log("info", `Worker ${process.pid} : ${id} started coap server on ` + port);
-        })
+        require('./app/routes/db_utils')(database, id);
       } else {
         require('./app/routes/api_sensordata')(server, database);
         server.listen(port, () => {

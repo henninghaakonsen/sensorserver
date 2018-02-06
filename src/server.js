@@ -7,15 +7,11 @@ var path = require('path');
 var public = __dirname + "/app/public/";
 const port = process.env.PORT || 9000;
 
-var coap = require('coap')
-var coap_server = coap.createServer()
+const coap = require('coap')
+const coap_server = coap.createServer()
 
 const cluster = require('cluster');
 const numCPUs = require('os').cpus().length;
-
-// UDP
-const dgram = require('dgram');
-const udp_server = dgram.createSocket('udp4');
 
 server.use(express.static(path.join(__dirname, 'app/public')))
 server.enable('trust proxy')
@@ -88,18 +84,10 @@ MongoClient.connect(db.url, (err, database) => {
           logger.log("info", `Worker ${process.pid} : ${id} started http server on ` + port);
         });
       } else {
-        /*require('./app/routes/api_coap')(coap_server, database);
+        require('./app/routes/api_coap')(coap_server, database);
         coap_server.listen(() => {
           logger.log("info", `Worker ${process.pid} : ${id} started coap server on ` + 5683);
-        })*/
-        
-        require('./app/routes/api_coap')(udp_server, database);   
-        udp_server.on('listening', () => {
-          const address = udp_server.address();
-          logger.log("info", `Worker ${process.pid} : ${id} started coap server on ${address.port}`);
-        });
-
-        udp_server.bind(5683);
+        })
       }
     });
   }

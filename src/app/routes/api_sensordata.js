@@ -79,7 +79,7 @@ module.exports = function (server, db) {
   server.post(api + '/nodes/:id', (req, res) => {
     let data = req.body;
     const id = req.params.id;
-    post_id(id, data, req, res, 'HTTP')
+    post_id(id, data, req, res)
   })
 
   server.post(api + '/nodes/remove/:id', (req, res) => {
@@ -99,6 +99,8 @@ module.exports = function (server, db) {
     res.header('Access-Control-Allow-Origin', '*');
     res.send("OK");
 
+    avgCreation(0.5)
+    avgCreation(1)
     avgCreation(5)
     avgCreation(10)
     avgCreation(30)
@@ -112,10 +114,12 @@ module.exports = function (server, db) {
 
     if (id != undefined) {
       res.send("OK")
-      createAvgCollection(id, 5)
-      createAvgCollection(id, 10)
-      createAvgCollection(id, 30)
-      createAvgCollection(id, 60)
+      calculateAndInsertAverages(id, 0.5)
+      calculateAndInsertAverages(id, 1)
+      calculateAndInsertAverages(id, 5)
+      calculateAndInsertAverages(id, 10)
+      calculateAndInsertAverages(id, 30)
+      calculateAndInsertAverages(id, 60)
     } else res.send("ERROR, undefined id")
   });
 }

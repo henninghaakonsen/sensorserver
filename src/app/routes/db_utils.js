@@ -15,24 +15,23 @@ module.exports = function (db, id) {
             return;
         }
 
-        let timestamp = moment.utc(data.timestamp);
-        data.timestamp = timestamp.format()
-        var currentTime = moment.utc();
+        let timestamp = moment.utc(data.timestamp, "YY/MM/DD,HH:mm:ssZ");
+        data.timestamp = timestamp.format();
+        var current_time = moment.utc();
 
-        data.latency = (currentTime.valueOf() - timestamp.valueOf()) / 1000;
-        data.coverage = data.type == "coverage" ? data.coverage * 1.0 : 0
-        if (server == 'HTTP') data.ip = req.ip
 
-        logger.log("info", id + ": " + data.latency + " - " + data.coverage + " - " + data.timestamp + " - " + data.ip)
-        if (data.latency > 2) logger.error("error", "latency high: " + data.latency)
+        data.latency = (current_time.valueOf() - timestamp.valueOf()) / 1000;
 
-        const displayName = data.displayName;
+        logger.log( "info", id + ": " + JSON.stringify(data) );
+        if (data.latency >= 2) logger.log("error", "latency high: " + data.latency);
+        let displayName = data.displayName != undefined ? data.displayName : "id" + id
 
         //find if the node id exists
         db.collection('nodes').find({ id: id }).toArray(function (err, doc) {
             // It does not exist, so add it to the db
             if (doc.length == 0) {
                 let data = { 'id': id, 'displayName': displayName }
+                console.log(data)
                 db.collection('nodes').insert(data, (err, result) => {
                     if (err) {
                         logger.log("error", "find failed: " + err);
@@ -101,20 +100,67 @@ module.exports = function (db, id) {
                         emptyArea = true
                         let elem = newDict[key]
 
+                        const coverage = nodeInfo[index].signal_power / 10;
+                        const latency = nodeInfo[index].latency;
+
+                        let power_usage = undefined
+                        if (index != 0) {
+                            power_usage = Math.pow( 10, ( parseInt( nodeInfo[index].tx_power ) / 100 )  ) * ( (nodeInfo[index].tx_time - nodeInfo[index-1].tx_time) / 1000 );
+                        }
+
                         if (elem == undefined) {
                             elem = []
-                            elem[0] = nodeInfo[index].latency
-                            elem[1] = nodeInfo[index].type == "coverage" ? nodeInfo[index].coverage : -120
+                            elem[0] = parseInt( nodeInfo[index].msg_id )
                             elem[2] = 1
-                            elem[3] = nodeInfo[index].type == "coverage" ? 1 : 0
-                        } else {
-                            elem[0] = (nodeInfo[index].latency + elem[0]) / 2
-                            elem[2] += 1
 
-                            if (nodeInfo[index].type == "coverage") {
-                                if (elem[1] == -120) elem[1] = nodeInfo[index].coverage
-                                else (nodeInfo[index].coverage + elem[1]) / 2
-                                elem[3] += 1
+                            elem[3] = latency
+                            elem[4] = latency
+                            elem[5] = latency
+                            elem[6] = coverage
+                            elem[7] = coverage
+                            elem[8] = coverage
+
+                            if ( power_usage != undefined ) {
+                                elem[9] = power_usage
+                                elem[10] = power_usage
+                                elem[11] = power_usage
+                            }
+                        } else {
+                            elem[1] = parseInt( nodeInfo[index].msg_id )
+                            elem[2] += 1
+                            
+                            elem[3] = (latency + elem[3]) / 2
+                            if ( elem[4] > latency ) {
+                                elem[4] = latency
+                            }
+    
+                            if ( elem[5] < latency ) {
+                                elem[5] = latency
+                            }
+
+                            elem[6] = (coverage + elem[6]) / 2                            
+                            if ( elem[7] > coverage ) {
+                                elem[7] = coverage
+                            }
+    
+                            if ( elem[8] < coverage ) {
+                                elem[8] = coverage
+                            }
+
+                            if ( elem[9] != undefined ) {
+                                elem[9] = (elem[9] + power_usage) / 2
+
+                                if ( elem[10] > power_usage ) {
+                                    elem[10] = power_usage
+                                }
+        
+                                if ( elem[11] < power_usage ) {
+                                    elem[11] = power_usage
+                                }
+                            } else {
+                                elem[9] = power_usage
+                                elem[10] = power_usage
+                                elem[11] = power_usage
                             }
                         }
 
@@ -130,7 +176,7 @@ module.exports = function (db, id) {
                         dateIndexFrom = moment.utc(dateIndexFrom.valueOf() + coeff)
                         dateIndexTo = moment.utc(dateIndexTo.valueOf() + coeff)
 
-                        if (emptyArea) newDict[key] = [0, -120, 0, 0]
+                        if (emptyArea) newDict[key] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
                         emptyArea = false
 
                         if (index == nodeInfoLength) currentDate = dateIndexTo
@@ -142,7 +188,13 @@ module.exports = function (db, id) {
                 for (var key in newDict) {
                     let timeKey = moment.utc(key).valueOf()
                     timeKey = moment.utc(key).toISOString()
-                    let data = { timestamp: key, latency: newDict[key][0], coverage: newDict[key][1], latencyDataPoints: newDict[key][2], coverageDataPoints: newDict[key][3] }
+
+                    let data = { timestamp: key, 
+                        first_msg_id: newDict[key][0], last_msg_id: newDict[key][1], data_points: newDict[key][2],
+                        avg_latency: newDict[key][3], min_latency: newDict[key][4], max_latency: newDict[key][5], 
+                        avg_coverage: newDict[key][6], min_coverage: newDict[key][7], max_coverage: newDict[key][8],
+                        avg_power_usage: newDict[key][9], min_power_usage: newDict[key][10], max_power_usage: newDict[key][11]
+                    }
                     dataCollection.push(data)
                 }
 
@@ -181,6 +233,8 @@ module.exports = function (db, id) {
 
     // TODO check other id
     if (id == 1) {
+        setInterval(this.avgCreation, 1000 * 60 * 0.5, 0.5);
+        setInterval(this.avgCreation, 1000 * 60 * 1, 1);
         setInterval(this.avgCreation, 1000 * 60 * 5, 5);
         setInterval(this.avgCreation, 1000 * 60 * 10, 10);
         setInterval(this.avgCreation, 1000 * 60 * 30, 30);

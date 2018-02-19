@@ -9,7 +9,7 @@ const logger = new Logger("info", "info", "average.log");
 
 module.exports = function (db, id) {
     this.post_id = function (id, data, req, res, server) {
-        if (data.timestamp == undefined) {
+        if (data.timestamp == undefined || !moment.utc(data.timestamp, "YY/MM/DD,HH:mm:ssZ").isValid() ) {
             logger.log("info", "Payload not recognized: " + JSON.stringify(data));
             res.send({ 'error': 'An error has occurred' });
             return;
@@ -18,7 +18,6 @@ module.exports = function (db, id) {
         let timestamp = moment.utc(data.timestamp, "YY/MM/DD,HH:mm:ssZ");
         data.timestamp = timestamp.format();
         var current_time = moment.utc();
-
 
         data.latency = (current_time.valueOf() - timestamp.valueOf()) / 1000;
 
@@ -50,6 +49,126 @@ module.exports = function (db, id) {
                 if (server == 'HTTP') res.send(result.ops[0]);
                 else if (server == 'COAP') res.end(result.ops[0])
             }
+        });
+    }
+
+    const calculateAndInsertInternal = function (nodeInfo, id) {
+        let id_interval = id + "_all"
+
+        db.collection(id_interval).find({}).limit(2).toArray(function (err, information) {
+            if (err) {
+                logger.log("error", "Error when searching for id_interval collection - " + err)
+                return null
+            } else {
+                if (information.length > 0) {
+                    db.collection(id_interval).drop(function (err) {
+                        if (err) {
+                            logger.log("error", "Error drop: ", err)
+                        }
+                    });
+                }
+            }
+
+            db.collection(id_interval).find({}).limit(2).toArray(function (err, information) {
+                let newDict = {}
+
+                let latencyIndex = 0
+                let coverageIndex = 0
+
+                let latencyAvg = 0
+                let latencyAvgCount = 0
+
+                let coverageAvg = 0
+                let coverageAvgCount = 0
+                let nodeInfoLength = nodeInfo.length;
+                let setDateIndex = true
+
+                let currentDate = moment.utc(nodeInfo[0].timestamp)
+                let index = 0
+                logger.log("info", "Beginning generating values for '" + id_interval + "'")
+                /*"_id" : ObjectId("5a77914b2308550635cccfa4"), "signal_power" : "-1089", "total_power" : "-986", "tx_power" : "230", "tx_time" : "832639", 
+                "rx_time" : "4473548", "cell_id" : "33359378", "ecl" : "1", "snr" : "21", "earfcn" : "6252", "pci" : "204", "rsrq" : "-130", 
+                "timestamp" : "2018-02-04T23:03:37Z", "msg_id" : "19", "ip" : "178.232.88.151", "latency" : 2.445, "coverage" : -108.9, "type" : "coverage" }*/
+                let emptyArea = true
+                while (index < nodeInfoLength) {
+                    const key = moment.utc(nodeInfo[index].timestamp).format()
+                    if ( nodeInfo[index].timestamp == undefined || !moment(nodeInfo[index].timestamp).isValid() ) {
+                        index += 1;
+                        continue;
+                    }
+
+                    emptyArea = true
+                    let elem = newDict[key]
+
+                    const coverage = nodeInfo[index].signal_power / 10;
+                    const latency = nodeInfo[index].latency;
+                    const ecl = nodeInfo[index].ecl;
+                    const cell_id = nodeInfo[index].cell_id;
+                    const tx_pwr = nodeInfo[index].tx_power / 10;
+                    let cell_change = 0;
+                    let interrupt = 0;
+                    
+                    let interval = 0;
+                    let tx_time = 0;
+                    let rx_time = 0; 
+                    let index_0 = 0;
+                    let index_1 = 0;
+
+                    if (index != 0) {
+                        cell_change = nodeInfo[index].cell_id == nodeInfo[index-1].cell_id ? 0 : 1;
+                        index_0 = moment(nodeInfo[index-1].timestamp)
+                        index_1 = moment(nodeInfo[index].timestamp)
+                        
+                        interval = index_1.diff(index_0, "seconds")
+                        interrupt = nodeInfo[index-1].msg_id < nodeInfo[index].msg_id ? 0 : 1;
+                        
+                        tx_time = ((nodeInfo[index].tx_time - nodeInfo[index-1].tx_time) / 1000) / interval
+                        rx_time = ((nodeInfo[index].rx_time - nodeInfo[index-1].rx_time) / 1000) / interval
+                    }
+
+                    elem = []
+                    elem[0] = parseInt( nodeInfo[index].msg_id )
+                    elem[1] = coverage
+                    elem[2] = parseInt( ecl )
+                    elem[3] = tx_pwr
+
+                    if ( cell_change == 1 ) {
+                        elem[4] = -1
+                        elem[5] = -1
+                    } else {
+                        elem[4] = rx_time
+                        elem[5] = tx_time
+                    }
+                    elem[6] = latency
+
+                    if ( interrupt ) {
+                        prev_date = new Date(new Date(nodeInfo[index].timestamp).getTime() - 1)
+                        prev_key = moment.utc(prev_date.getTime()).format()
+                        newDict[prev_key] = [-1, -1, -1, -1, -1, -1, -1]
+                    }
+
+                    newDict[key] = elem
+                    index += 1
+                }
+
+                let count = 0
+                let dataCollection = []
+
+                for (var key in newDict) {
+                    let timeKey = moment.utc(key).valueOf()
+                    timeKey = moment.utc(key).toISOString()
+
+                    let data = { timestamp: key, 
+                        msg_id: newDict[key][0], coverage: newDict[key][1], ecl: newDict[key][2],
+                        tx_pwr: newDict[key][3], rx_time: newDict[key][4], tx_time: newDict[key][5],
+                        latency: newDict[key][6]
+                    }
+                    dataCollection.push(data)
+                }
+
+                logger.log("info", "Insert '" + dataCollection.length + "' elements into '" + id_interval + "'")
+                db.collection(id_interval).insertMany(dataCollection, { ordered: true });
+            });
         });
     }
 
@@ -97,6 +216,10 @@ module.exports = function (db, id) {
                 while (index < nodeInfoLength) {
                     const key = dateIndexTo.format()
                     if ((currentDate.valueOf() >= dateIndexFrom.valueOf() && currentDate.valueOf() <= dateIndexTo.valueOf()) && index < nodeInfoLength) {
+                        if ( nodeInfo[index].timestamp == undefined || !moment(nodeInfo[index].timestamp).isValid() ) {
+                            continue;
+                        }
+
                         emptyArea = true
                         let elem = newDict[key]
 
@@ -166,7 +289,9 @@ module.exports = function (db, id) {
 
                         newDict[key] = elem
                         index += 1
-                        if (index < nodeInfoLength) currentDate = moment.utc(nodeInfo[index].timestamp)
+                        if (index < nodeInfoLength) {
+                            currentDate = moment.utc(nodeInfo[index].timestamp)
+                        }
 
                         if (currentDate.valueOf() >= dateIndexTo.valueOf()) {
                             dateIndexFrom = moment.utc(dateIndexFrom.valueOf() + coeff)
@@ -176,7 +301,7 @@ module.exports = function (db, id) {
                         dateIndexFrom = moment.utc(dateIndexFrom.valueOf() + coeff)
                         dateIndexTo = moment.utc(dateIndexTo.valueOf() + coeff)
 
-                        if (emptyArea) newDict[key] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                        if (emptyArea) newDict[key] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
                         emptyArea = false
 
                         if (index == nodeInfoLength) currentDate = dateIndexTo
@@ -199,7 +324,7 @@ module.exports = function (db, id) {
                 }
 
                 logger.log("info", "Insert '" + dataCollection.length + "' elements into '" + id_interval + "'")
-                db.collection(id_interval).insertMany(dataCollection, { ordered: true });
+                //db.collection(id_interval).insertMany(dataCollection, { ordered: true });
             });
         });
     }
@@ -214,6 +339,16 @@ module.exports = function (db, id) {
         });
     };
 
+    this.calculateAndInsert = function (id) {
+        db.collection(id).find({}).sort({ timestamp: 1 }).toArray(function (err, nodeInfo) {
+            if (err) {
+                logger.log("error", "Error when collecting information about node id '" + id + "' - " + err)
+            } else {
+                calculateAndInsertInternal(nodeInfo, id)
+            }
+        });
+    };
+
     const avg_creation_internal = function (interval) {
         db.collection('nodes').find({}).toArray(function (err, nodes) {
             if (err) {
@@ -221,6 +356,7 @@ module.exports = function (db, id) {
             } else {
                 for (let i = 0; i < nodes.length; i++) {
                     this.calculateAndInsertAverages(nodes[i].id, interval)
+                    this.calculateAndInsert(nodes[i].id)
                 }
             }
         });
@@ -233,8 +369,6 @@ module.exports = function (db, id) {
 
     // TODO check other id
     if (id == 1) {
-        setInterval(this.avgCreation, 1000 * 60 * 0.5, 0.5);
-        setInterval(this.avgCreation, 1000 * 60 * 1, 1);
         setInterval(this.avgCreation, 1000 * 60 * 5, 5);
         setInterval(this.avgCreation, 1000 * 60 * 10, 10);
         setInterval(this.avgCreation, 1000 * 60 * 30, 30);

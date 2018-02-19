@@ -18,7 +18,10 @@ module.exports = function (server, db) {
     let toDate = req.query.toDate;
 
     let id_interval = null
-    if (interval != 0) {
+
+    if (interval == "all") {
+      id_interval = id + "_all"
+    } else if (interval != 0) {
       id_interval = id + "_" + interval
     } else {
       id_interval = id
@@ -99,8 +102,6 @@ module.exports = function (server, db) {
     res.header('Access-Control-Allow-Origin', '*');
     res.send("OK");
 
-    avgCreation(0.5)
-    avgCreation(1)
     avgCreation(5)
     avgCreation(10)
     avgCreation(30)
@@ -114,8 +115,8 @@ module.exports = function (server, db) {
 
     if (id != undefined) {
       res.send("OK")
-      calculateAndInsertAverages(id, 0.5)
-      calculateAndInsertAverages(id, 1)
+      calculateAndInsert(id)
+
       calculateAndInsertAverages(id, 5)
       calculateAndInsertAverages(id, 10)
       calculateAndInsertAverages(id, 30)

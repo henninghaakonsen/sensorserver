@@ -89,22 +89,22 @@ module.exports = function (db, id) {
                 /*"_id" : ObjectId("5a77914b2308550635cccfa4"), "signal_power" : "-1089", "total_power" : "-986", "tx_power" : "230", "tx_time" : "832639", 
                 "rx_time" : "4473548", "cell_id" : "33359378", "ecl" : "1", "snr" : "21", "earfcn" : "6252", "pci" : "204", "rsrq" : "-130", 
                 "timestamp" : "2018-02-04T23:03:37Z", "msg_id" : "19", "ip" : "178.232.88.151", "latency" : 2.445, "coverage" : -108.9, "type" : "coverage" }*/
-                let emptyArea = true
+
                 while (index < nodeInfoLength) {
-                    const key = moment.utc(nodeInfo[index].timestamp).format()
                     if ( nodeInfo[index].timestamp == undefined || !moment(nodeInfo[index].timestamp).isValid() ) {
                         index += 1;
                         continue;
                     }
+                    
+                    const key = moment.utc(nodeInfo[index].timestamp).format()                    
 
-                    emptyArea = true
                     let elem = newDict[key]
 
-                    const coverage = nodeInfo[index].signal_power / 10;
-                    const latency = nodeInfo[index].latency;
-                    const ecl = nodeInfo[index].ecl;
-                    const cell_id = nodeInfo[index].cell_id;
-                    const tx_pwr = nodeInfo[index].tx_power / 10;
+                    let coverage = nodeInfo[index].signal_power / 10;
+                    let latency = nodeInfo[index].latency;
+                    let ecl = nodeInfo[index].ecl;
+                    let cell_id = nodeInfo[index].cell_id;
+                    let tx_pwr = nodeInfo[index].tx_power / 10;
                     let cell_change = 0;
                     let interrupt = 0;
                     
@@ -114,41 +114,46 @@ module.exports = function (db, id) {
                     let index_0 = 0;
                     let index_1 = 0;
 
-                    if (index != 0) {
+                    if ( index != 0 ) {
                         cell_change = nodeInfo[index].cell_id == nodeInfo[index-1].cell_id ? 0 : 1;
-                        index_0 = moment(nodeInfo[index-1].timestamp)
-                        index_1 = moment(nodeInfo[index].timestamp)
+                        interrupt = parseInt( nodeInfo[index-1].msg_id ) < parseInt( nodeInfo[index].msg_id ) ? 0 : 1;                        
+                    }
+
+                    if ( index < nodeInfoLength - 1 ) {
+                        index_0 = moment(nodeInfo[index].timestamp)
+                        index_1 = moment(nodeInfo[index + 1].timestamp)
                         
                         interval = index_1.diff(index_0, "seconds")
-                        interrupt = nodeInfo[index-1].msg_id < nodeInfo[index].msg_id ? 0 : 1;
                         
-                        tx_time = ((nodeInfo[index].tx_time - nodeInfo[index-1].tx_time) / 1000) / interval
-                        rx_time = ((nodeInfo[index].rx_time - nodeInfo[index-1].rx_time) / 1000) / interval
+                        tx_time = ((nodeInfo[index+1].tx_time - nodeInfo[index].tx_time) / 1000) / interval
+                        rx_time = ((nodeInfo[index+1].rx_time - nodeInfo[index].rx_time) / 1000) / interval
                     }
 
                     elem = []
                     elem[0] = parseInt( nodeInfo[index].msg_id )
                     elem[1] = coverage
-                    elem[2] = parseInt( ecl )
+                    elem[2] = ecl
                     elem[3] = tx_pwr
 
                     if ( cell_change == 1 ) {
-                        elem[4] = -1
-                        elem[5] = -1
+                        elem[4] = -0.5
+                        elem[5] = -0.5
                     } else {
                         elem[4] = rx_time
                         elem[5] = tx_time
                     }
+                    
                     elem[6] = latency
 
                     if ( interrupt ) {
-                        prev_date = new Date(new Date(nodeInfo[index].timestamp).getTime() - 1)
-                        prev_key = moment.utc(prev_date.getTime()).format()
-                        newDict[prev_key] = [-1, -1, -1, -1, -1, -1, -1]
+                        let prev_date = new Date(nodeInfo[index].timestamp)
+                        let tmp_key = moment.utc(prev_date.getTime() - 1).format()
+                        newDict[tmp_key] = [-1, -1, -1, -1, -1, -1, -1]
                     }
 
                     newDict[key] = elem
                     index += 1
+                    prev_key = key
                 }
 
                 let count = 0

@@ -8,4 +8,4 @@ Project for sensor server for my master thesis. The server side will be based on
 3. Run with 'npm start'
 4. Navigate to http://localhost:9000/
 
-If you would like the UI to be hosted by this server, build the sensor app(https://github.com/henninghaakonsen/sensorapp) and replace the file "sensorserver/src/app/public/main.js"
+If you would like a new UI to be hosted by this server, build the sensor app(https://github.com/henninghaakonsen/sensorapp) and replace the file "sensorserver/src/app/public/main.js"

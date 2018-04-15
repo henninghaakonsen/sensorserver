@@ -9,13 +9,13 @@ const logger = new Logger("info", "info", "average.log");
 
 module.exports = function (db, id) {
     this.post_id = function (id, data, req, res, server) {
-        if (data.timestamp == undefined || !moment.utc(data.timestamp, "YY/MM/DD,HH:mm:ssZ").isValid() ) {
+        if (data.timestamp == undefined || !moment.utc(data.timestamp, "YYYY-MM-DDTHH:mm:ss.SSS").isValid() ) {
             logger.log("info", "Payload not recognized: " + JSON.stringify(data));
             res.send({ 'error': 'An error has occurred' });
             return;
         }
-
-        let timestamp = moment.utc(data.timestamp, "YY/MM/DD,HH:mm:ssZ");
+        
+        let timestamp = moment.utc(data.timestamp, "YYYY-MM-DDTHH:mm:ss.SSS");
         data.timestamp = timestamp.format();
         var current_time = moment.utc();
 
@@ -85,17 +85,14 @@ module.exports = function (db, id) {
 
                 let currentDate = moment.utc(nodeInfo[0].timestamp)
                 let index = 0
-                logger.log("info", "Beginning generating values for '" + id_interval + "'")
-                /*"_id" : ObjectId("5a77914b2308550635cccfa4"), "signal_power" : "-1089", "total_power" : "-986", "tx_power" : "230", "tx_time" : "832639", 
-                "rx_time" : "4473548", "cell_id" : "33359378", "ecl" : "1", "snr" : "21", "earfcn" : "6252", "pci" : "204", "rsrq" : "-130", 
-                "timestamp" : "2018-02-04T23:03:37Z", "msg_id" : "19", "ip" : "178.232.88.151", "latency" : 2.445, "coverage" : -108.9, "type" : "coverage" }*/
+                //logger.log("info", "Beginning generating values for '" + id_interval + "'")
 
                 while (index < nodeInfoLength) {
                     if ( nodeInfo[index].timestamp == undefined || !moment(nodeInfo[index].timestamp).isValid() ) {
                         index += 1;
                         continue;
                     }
-                    
+
                     const key = moment.utc(nodeInfo[index].timestamp).format()                    
 
                     let elem = newDict[key]
@@ -125,8 +122,11 @@ module.exports = function (db, id) {
                         
                         interval = index_1.diff(index_0, "seconds")
                         
-                        tx_time = ((nodeInfo[index+1].tx_time - nodeInfo[index].tx_time) / 1000) / interval
-                        rx_time = ((nodeInfo[index+1].rx_time - nodeInfo[index].rx_time) / 1000) / interval
+                        //tx_time = ((nodeInfo[index+1].tx_time - nodeInfo[index].tx_time) / 1000) / interval
+                        //rx_time = ((nodeInfo[index+1].rx_time - nodeInfo[index].rx_time) / 1000) / interval
+
+                        tx_time = (nodeInfo[index+1].tx_time - nodeInfo[index].tx_time)
+                        rx_time = (nodeInfo[index+1].rx_time - nodeInfo[index].rx_time)
                     }
 
                     elem = []
@@ -134,18 +134,11 @@ module.exports = function (db, id) {
                     elem[1] = coverage
                     elem[2] = ecl
                     elem[3] = tx_pwr
-
-                    if ( cell_change == 1 ) {
-                        elem[4] = -0.5
-                        elem[5] = -0.5
-                    } else {
-                        elem[4] = rx_time
-                        elem[5] = tx_time
-                    }
-                    
+                    elem[4] = rx_time
+                    elem[5] = tx_time
                     elem[6] = latency
 
-                    if ( interrupt ) {
+                    if ( interrupt || cell_change ) {
                         let prev_date = new Date(nodeInfo[index].timestamp)
                         let tmp_key = moment.utc(prev_date.getTime() - 1).format()
                         newDict[tmp_key] = [-1, -1, -1, -1, -1, -1, -1]
@@ -171,7 +164,7 @@ module.exports = function (db, id) {
                     dataCollection.push(data)
                 }
 
-                logger.log("info", "Insert '" + dataCollection.length + "' elements into '" + id_interval + "'")
+                //logger.log("info", "Insert '" + dataCollection.length + "' elements into '" + id_interval + "'")
                 db.collection(id_interval).insertMany(dataCollection, { ordered: true });
             });
         });
@@ -215,7 +208,7 @@ module.exports = function (db, id) {
 
                 let currentDate = moment.utc(nodeInfo[0].timestamp)
                 let index = 0
-                logger.log("info", "Beginning generating values for '" + id_interval + "'")
+                //logger.log("info", "Beginning generating values for '" + id_interval + "'")
                 
                 let emptyArea = true
                 while (index < nodeInfoLength) {
@@ -328,8 +321,8 @@ module.exports = function (db, id) {
                     dataCollection.push(data)
                 }
 
-                logger.log("info", "Insert '" + dataCollection.length + "' elements into '" + id_interval + "'")
-                //db.collection(id_interval).insertMany(dataCollection, { ordered: true });
+                //logger.log("info", "Insert '" + dataCollection.length + "' elements into '" + id_interval + "'")
+                db.collection(id_interval).insertMany(dataCollection, { ordered: true });
             });
         });
     }
@@ -360,7 +353,7 @@ module.exports = function (db, id) {
                 logger.log("error", "Error" + err)
             } else {
                 for (let i = 0; i < nodes.length; i++) {
-                    this.calculateAndInsertAverages(nodes[i].id, interval)
+                    //this.calculateAndInsertAverages(nodes[i].id, interval)
                     this.calculateAndInsert(nodes[i].id)
                 }
             }
@@ -368,15 +361,16 @@ module.exports = function (db, id) {
     }
 
     this.avgCreation = function (interval) {
-        logger.log("info", "avg creation" + interval)
+        //logger.log("info", "avg creation" + interval)
         Worker.create().eval(avg_creation_internal(interval))
     }
 
     // TODO check other id
     if (id == 1) {
-        setInterval(this.avgCreation, 1000 * 60 * 5, 5);
-        setInterval(this.avgCreation, 1000 * 60 * 10, 10);
-        setInterval(this.avgCreation, 1000 * 60 * 30, 30);
-        setInterval(this.avgCreation, 1000 * 60 * 60, 60);
+        setInterval(this.avgCreation, 1000 * 60 * 1, 0);
+        //setInterval(this.avgCreation, 1000 * 60 * 5, 5);
+        //setInterval(this.avgCreation, 1000 * 60 * 10, 10);
+        //setInterval(this.avgCreation, 1000 * 60 * 30, 30);
+        //setInterval(this.avgCreation, 1000 * 60 * 60, 60);
     }
 }

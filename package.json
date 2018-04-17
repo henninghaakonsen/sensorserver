@@ -21,6 +21,7 @@
     "body-parser": "^1.17.2",
     "express": "^4.15.4",
     "filelogger": "^1.0.3",
+    "logger-request": "^3.8.0",
     "moment": "^2.19.1",
     "mongodb": "^2.2.31",
     "threads": "^0.8.1",

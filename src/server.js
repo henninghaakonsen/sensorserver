@@ -13,6 +13,12 @@ const coap_server = coap.createServer()
 const cluster = require('cluster');
 const numCPUs = require('os').cpus().length;
 
+var express_logger = require('logger-request');
+server.use(express_logger({
+  filename: 'requests.log',
+  daily: true,
+}))
+
 server.use(express.static(path.join(__dirname, 'app/public')))
 server.enable('trust proxy')
 

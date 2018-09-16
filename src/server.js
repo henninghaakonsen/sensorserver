@@ -7,9 +7,6 @@ var path = require('path');
 var public = __dirname + "/app/public/";
 const port = process.env.PORT || 9000;
 
-const coap = require('coap')
-const coap_server = coap.createServer()
-
 const cluster = require('cluster');
 const numCPUs = require('os').cpus().length;
 
@@ -52,10 +49,8 @@ MongoClient.connect(db.url, (err, database) => {
       const worker = cluster.fork();
       if (i == 0 && numCPUs > 1) {
         id_to_worker = 1;
-      } else if (i < numCPUs / 2) {
-        id_to_worker = 2;
       } else {
-        id_to_worker = 3;
+        id_to_worker = 2;
       }
 
       notify_worker(worker, id_to_worker);
@@ -84,16 +79,11 @@ MongoClient.connect(db.url, (err, database) => {
       if (id == 1 && numCPUs > 1) {
         logger.log("info", `Worker ${process.pid} : ${id} started analysis worker`)
         require('./app/routes/db_utils')(database, id);
-      } else if (id == 2) {
+      } else {
         require('./app/routes/api_sensordata')(server, database);
         server.listen(port, () => {
           logger.log("info", `Worker ${process.pid} : ${id} started http server on ` + port);
         });
-      } else {
-        require('./app/routes/api_coap')(coap_server, database);
-        coap_server.listen(() => {
-          logger.log("info", `Worker ${process.pid} : ${id} started coap server on ` + 5683);
-        })
       }
     });
   }

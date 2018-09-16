@@ -1,13 +1,12 @@
 var moment = require('moment')
 
 var Logger = require("filelogger");
-const logger = new Logger("info", "info", "average.log");
+const logger = new Logger("error", "info", "average.log");
 
 module.exports = function (db, id) {
     this.post_id = function (id, data, req, res, server) {
         if (server == 'HTTP') data.ip = req.ip
 
-        logger.log( "info", id + ": " + JSON.stringify(data) );
         let displayName = data.displayName != undefined ? data.displayName : "id" + id
 
         //find if the node id exists
@@ -49,8 +48,7 @@ module.exports = function (db, id) {
 
         let currentDate = moment.utc(nodeInfo[0].timestamp)
         let index = 0
-        logger.log("info", "Beginning generating values for '" + id_interval + "'")
-        
+
         let emptyArea = true
         while (index < nodeInfoLength) {
             const key = dateIndexTo.format()
@@ -96,7 +94,6 @@ module.exports = function (db, id) {
 
         db.collection(id).drop()
 
-        logger.log("info", "Insert '" + dataCollection.length + "' elements into '" + id_interval + "'")
         db.collection(id_interval).insertMany(dataCollection, { ordered: true });
     }
 

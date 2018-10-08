@@ -36,12 +36,23 @@ module.exports = function (db, id) {
     }
 
     const analyze = (nodeInfo, id, interval) => {
+        const id_interval = id + "_" + interval
+        
+        db.collection(id_interval).find({}).limit(2).toArray(function (err, information) {
+            if (information.length > 0) {
+                db.collection(id_interval).drop(err => {
+                    if (err) {
+                        logger.log("error", "Error drop: ", err)
+                    }
+                });
+            }
+        });
+
         let newDict = {}
 
         const coeff = 1000 * 60 * interval
-        const id_interval = id + "_" + interval
 
-        let dateIndexFrom = moment.utc((Math.round(moment.utc(nodeInfo[0]).valueOf() / coeff) * coeff) - coeff)
+        let dateIndexFrom = moment.utc((Math.round(moment.utc(nodeInfo[0].timestamp).valueOf() / coeff) * coeff) - coeff)
         let dateIndexTo = moment.utc(dateIndexFrom.valueOf() + coeff)
 
         let nodeInfoLength = nodeInfo.length;
@@ -50,13 +61,14 @@ module.exports = function (db, id) {
         let index = 0
 
         let emptyArea = true
-        while (index < nodeInfoLength) {
+        const now = moment.utc(moment.utc().valueOf() + coeff);
+
+        while (index < nodeInfoLength && dateIndexTo <= now) {
             const key = dateIndexTo.format()
             if ((currentDate.valueOf() >= dateIndexFrom.valueOf() && currentDate.valueOf() <= dateIndexTo.valueOf()) && index < nodeInfoLength) {
                 emptyArea = true
                 let elem = newDict[key]
 
-                console.log(nodeInfo[index].temperature)
                 if (elem == undefined) {
                     elem = []
                     elem[0] = parseFloat(nodeInfo[index].temperature)
@@ -65,7 +77,6 @@ module.exports = function (db, id) {
                     elem[0] = (parseFloat(nodeInfo[index].temperature) + parseFloat(elem[0])) / 2
                     elem[1] += 1
                 }
-                console.log(elem)
 
                 newDict[key] = elem
                 index += 1
@@ -92,39 +103,7 @@ module.exports = function (db, id) {
             dataCollection.push(data)
         }
 
-        db.collection(id).drop()
-
         db.collection(id_interval).insertMany(dataCollection, { ordered: true });
-    }
-
-    const calculateAndInsertAveragesInternal = (id, interval) => {
-        let id_interval = id + "_" + interval
-
-        db.collection(id_interval).find({}).sort({_id:-1}).limit(1).toArray((err, analyzedInfo) => {
-            if (err) {
-                logger.log("error", "Error when searching for id_interval collection - " + err)
-                return null
-            }
-
-            if (analyzedInfo.length === 0) {
-                db.collection(id).find({}).sort({ timestamp: 1 }).toArray((err, detailedInfo) => {
-                    if (detailedInfo.length === 0) return;
-
-                    analyze(detailedInfo, id, interval)
-                })
-            } else {
-                db.collection(id).find({
-                    "timestamp": {
-                      $gte: analyzedInfo[0].timestamp,
-                      $lte: new Date().toISOString(),
-                    }
-                  }).sort({ timestamp: 1 }).toArray((err, detailedInfo) => {
-                    if (detailedInfo.length === 0) return;
-
-                    analyze(detailedInfo, id, interval)
-                })
-            }
-        })
     }
 
     const avg_creation_internal = interval => {
@@ -133,14 +112,17 @@ module.exports = function (db, id) {
                 logger.log("error", "Error" + err)
             } else {
                 for (let i = 0; i < nodes.length; i++) {
-                    calculateAndInsertAveragesInternal(nodes[i].id, interval)
+                    db.collection(nodes[i].id).find({}).sort({ timestamp: 1 }).toArray((err, detailedInfo) => {
+                        if (detailedInfo.length === 0) return;
+            
+                        analyze(detailedInfo, nodes[i].id, interval)
+                    })
                 }
             }
         });
     }
 
     this.avgCreation = () => {
-        console.log('analyze')
         avg_creation_internal(1)
         avg_creation_internal(5)
         avg_creation_internal(10)

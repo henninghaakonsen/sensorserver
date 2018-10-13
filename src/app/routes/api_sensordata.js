@@ -12,12 +12,10 @@ module.exports = function (server, db) {
 
     let id_interval = null
 
-    if (interval == "all") {
-      id_interval = id + "_all"
-    } else if (interval != 0) {
-      id_interval = id + "_" + interval
+    if (interval === undefined) {
+      id_interval = id;
     } else {
-      id_interval = id
+      id_interval = id + "_" + interval
     }
 
     db.collection(id_interval).find().sort({ timestamp: 1 }).toArray(function (err, information) {

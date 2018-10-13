@@ -129,6 +129,6 @@ module.exports = function (db, id) {
     }
 
     if (id == 1) {
-        setInterval(this.avgCreation, 1000 * 60 * 1, 0);
+        //setInterval(this.avgCreation, 1000 * 60 * 1, 0);
     }
 }

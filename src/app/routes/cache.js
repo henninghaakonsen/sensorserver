@@ -5,6 +5,10 @@ exports.getLatestTemperature = id => {
     return temperaturer[id];
 };
 
+exports.getLatestTemperatures = () => {
+    return temperaturer;
+};
+
 exports.insertTemperature = (id, data) => {
     temperaturer = {
         ...temperaturer,

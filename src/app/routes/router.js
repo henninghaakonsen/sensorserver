@@ -7,6 +7,7 @@ exports.setupRouter = server => {
     server.get(api + "/temperature_now/:id", (req, res) => {
         const id = req.params.id;
 
+        res.header("Access-Control-Allow-Origin", "*");
         res.send(getLatestTemperature(id));
     });
 

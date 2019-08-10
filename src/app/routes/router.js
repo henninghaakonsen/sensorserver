@@ -1,6 +1,10 @@
 let api = "/api";
 
-const { getLatestTemperature, getNoder } = require("./cache");
+const {
+    getLatestTemperature,
+    getLatestTemperatures,
+    getNoder
+} = require("./cache");
 const { post_id } = require("./db_utils");
 
 exports.setupRouter = server => {
@@ -11,11 +15,9 @@ exports.setupRouter = server => {
         res.send(getLatestTemperature(id));
     });
 
-    server.get(api + "/temperature_now", (req, res) => {
-        const id = req.params.id;
-
+    server.get(api + "/temperatures_now", (req, res) => {
         res.header("Access-Control-Allow-Origin", "*");
-        res.send(getLatestTemperature(id));
+        res.send(getLatestTemperatures());
     });
 
     server.get(api + "/nodes", (req, res) => {

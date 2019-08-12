@@ -10,7 +10,6 @@ exports.getLatestTemperatures = () => {
 };
 
 exports.insertTemperature = (id, data) => {
-    console.log(temperaturer);
     temperaturer = {
         ...temperaturer,
         [id]: data
@@ -22,7 +21,6 @@ exports.getNoder = () => {
 };
 
 exports.insertNode = node => {
-    console.log(noder);
     noder = {
         ...noder,
         [node.id]: node

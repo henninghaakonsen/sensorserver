@@ -23,7 +23,7 @@
     "filelogger": "^1.0.3",
     "logger-request": "^3.8.0",
     "moment": "^2.19.1",
-    "mongodb": "^2.2.31",
+    "mongodb": "^3.1.13",
     "threads": "^0.8.1",
     "udp-hub": "^0.8.3",
     "webworker-threads": "^0.7.13"
